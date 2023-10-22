@@ -1,0 +1,11 @@
+FROM golang:latest
+
+RUN go install -mod=mod github.com/cosmtrek/air
+
+WORKDIR /app
+
+ENV config=config/config-docker.yml
+
+EXPOSE 8080
+
+ENTRYPOINT ["air"]

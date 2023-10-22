@@ -1,0 +1,137 @@
+version: "3.9"
+name: clean
+
+services:
+  clean:
+    container_name: api
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.air
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgresql:
+        condition: service_started
+      redis:
+        condition: service_started
+      otelcol:
+        condition: service_started
+    environment:
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otelcol:4317
+      - OTEL_EXPORTER_OTLP_INSECURE=true
+    restart: on-failure
+    volumes:
+      - ../:/app
+    networks:
+      - web_api
+
+  redis:
+    image: redis/redis-stack:latest
+    container_name: redis
+    ports:
+      - ${REDIS_HOST_PORT:-6379}:${REDIS_PORT:-6379}
+      - "8001:8001"
+    restart: on-failure
+    networks:
+      - web_api
+
+  postgresql:
+    image: postgres:latest
+    container_name: postgres
+    ports:
+      - ${POSTGRES_HOST_PORT:-5432}:${POSTGRES_PORT:-5432}
+    restart: on-failure
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_DB=${POSTGRES_DB:-clean_db}
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - ../tmp/pgdata:/var/lib/postgresql/data
+    networks:
+      - web_api
+
+  otelcol:
+    image: otel/opentelemetry-collector-contrib:0.86.0
+    container_name: clean_otelcol
+    deploy:
+      resources:
+        limits:
+          memory: 125M
+    restart: always
+    command: [ "--config=/etc/otelcol-config.yml" ]
+    volumes:
+      - ../etc/otelcol-config.yml:/etc/otelcol-config.yml
+    ports:
+      - "1888:1888"     # pprof extension
+      - "4317"          # OTLP gRPC receiver
+      - "4318"          # OTLP over HTTP receiver
+      - "13133:13133"   # health_check extension
+      - "9464"          # Prometheus exporter
+      - "8888"          # Prometheus metric exposed by the collector
+      - "8889:8889"     # Prometheus exporter metric
+    depends_on:
+      - jaeger
+      - prometheus
+    networks:
+      - web_api
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.50
+    container_name: clean_jaeger
+    restart: always
+    command:
+      - "--memory.max-traces"
+      - "10000"
+      - "--prometheus.server-url"
+      - "http://prometheus:9090"
+    deploy:
+      resources:
+        limits:
+          memory: 300M
+    environment:
+      - METRICS_STORAGE_TYPE=prometheus
+    ports:
+      - "16686:16686"
+      - "4317"
+      - "4318"
+    networks:
+      - web_api
+
+  prometheus:
+    container_name: clean_prometheus
+    image: prom/prometheus
+    restart: on-failure
+    volumes:
+      - ../etc/prometheus-config.yml:/etc/prometheus/prometheus.yml:Z
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention=20d"
+      - "--web.console.libraries=/usr/share/prometheus/console_libraries"
+      - "--web.console.templates=/usr/share/prometheus/consoles"
+      - "--web.enable-lifecycle"
+      - "--web.route-prefix=/"
+      - "--enable-feature=exemplar-storage"
+      - "--enable-feature=otlp-write-receiver"
+    ports:
+      - ${PROMETHEUS_HOST_PORT:-9090}:${PROMETHEUS_PORT:-9090}
+    networks:
+      - web_api
+
+  node_exporter:
+    image: prom/node-exporter
+    container_name: node_exporter
+    restart: on-failure
+    ports:
+      - "9100"
+    networks:
+      - web_api
+
+networks:
+  web_api:
+    driver: bridge

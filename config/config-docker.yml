@@ -1,0 +1,31 @@
+server:
+  Host: 0.0.0.0
+  Port: 8080
+  Name: clean
+  Version: 1.0.0
+  ReadTimeout: 10
+  WriteTimeout: 10
+  SSL: true
+logger:
+  Encoding: console
+  Level: Debug
+  Mode: Production
+postgres:
+  Host: postgresql
+  Port: 5432
+  User: postgres
+  Password: postgres
+  DbName: clean_db
+  SSlMode: false
+  MaxOpenConn: 60
+  ConnLifetime: 120s
+  MaxIdleTime: 20s
+redis:
+  Host: redis
+  Port: 6379
+  Password: ""
+  DB: 0
+  MinIdleConn: 200
+  PoolSize: 12000
+  PoolTimeout: 240s
+  ReadTimeout:
