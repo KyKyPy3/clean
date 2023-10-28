@@ -10,6 +10,8 @@ up: dev
 down: docker-stop
 clean: docker-teardown docker-clean
 
+install-deps: migrate gotestsum tparse mockery golangci-lint
+
 # ==============================================================================
 # Modules
 tidy:

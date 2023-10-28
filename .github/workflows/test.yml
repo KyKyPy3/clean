@@ -1,10 +1,12 @@
-name: Test
+name: CI
 
 on:
   push:
     branches: [master]
+    paths-ignore: ["*.md", "docs", "config", ".github"]
   pull_request:
     branches: [master]
+    paths-ignore: ["*.md", "docs", "config", ".github"]
 
 jobs:
   test:
@@ -17,9 +19,25 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version: '1.21.x'
+        id: go
 
       - name: Change to code directory
         run: cd ${{ github.workspace }}
+
+      - name: Cache go modules
+        id: cache
+        uses: actions/cache@v3
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Install Dependencies
+        run: make install-dependencies
+
+      - name: Build
+        run: make build
 
       - name: Run tests
         run: |

@@ -148,6 +148,8 @@ func applyDatabaseMigrations() {
 	}
 
 	if err := migration.Up(); err != nil && err != migrate.ErrNoChange {
+		closeMigrate(migration)
+
 		log.Fatalf("Failed to apply migrations: %s", err)
 	}
 
@@ -172,6 +174,7 @@ func applyDatabaseSeed() {
 	}
 
 	if err := migration.Up(); err != nil && err != migrate.ErrNoChange {
+		closeMigrate(migration)
 		log.Fatalf("Failed to apply seed: %s", err)
 	}
 
@@ -181,5 +184,15 @@ func applyDatabaseSeed() {
 func tearDownDockerTestEnvironment() {
 	if err := pool.Purge(resource); err != nil {
 		log.Fatalf("Could not purge Docker resource: %s", err)
+	}
+}
+
+func closeMigrate(migrate *migrate.Migrate) {
+	sourceErr, databaseErr := migrate.Close()
+	if sourceErr != nil {
+		log.Fatal("error closing migration source", sourceErr)
+	}
+	if databaseErr != nil {
+		log.Fatal("error closing database source", databaseErr)
 	}
 }
