@@ -1,10 +1,11 @@
 package entity
 
 import (
-	"github.com/KyKyPy3/clean/internal/common"
-	"golang.org/x/crypto/bcrypt"
 	"strings"
 	"time"
+
+	"github.com/KyKyPy3/clean/internal/common"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type User struct {
@@ -34,7 +35,7 @@ func NewUser(name, surname, middlename, email, password string) (*User, error) {
 	u.Password = password
 	err = u.Validate()
 	if err != nil {
-		return nil, common.ErrInvalidEntity
+		return nil, err
 	}
 
 	return u, nil
@@ -51,6 +52,9 @@ func (u *User) ValidatePassword(password string) error {
 
 // Validate user
 func (u *User) Validate() error {
+	if u.Email == "" {
+		return common.ErrInvalidEntity
+	}
 	return nil
 }
 
