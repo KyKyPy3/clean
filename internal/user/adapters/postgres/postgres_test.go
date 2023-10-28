@@ -11,6 +11,7 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/ory/dockertest/v3"
 	"github.com/ory/dockertest/v3/docker"
@@ -71,6 +72,12 @@ func TestFetch(t *testing.T) {
 	users, err := repo.Fetch(context.Background(), 10)
 	require.NoError(t, err)
 	require.Len(t, users, 2)
+}
+
+func TestGetByID(t *testing.T) {
+	user, err := repo.GetByID(context.Background(), uuid.MustParse("2b0c8791-2136-46b6-bc38-b33038ca2e80"))
+	require.NoError(t, err)
+	require.NotNil(t, user)
 }
 
 func setupDockerTestEnvironment() {
