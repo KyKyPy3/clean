@@ -34,7 +34,7 @@ jobs:
             ${{ runner.os }}-go-
 
       - name: Install Dependencies
-        run: make install-dependencies
+        run: make install-deps
 
       - name: Build
         run: make build
