@@ -2,3 +2,4 @@ pgdata
 .DS_Store
 tmp
 bin
+.idea

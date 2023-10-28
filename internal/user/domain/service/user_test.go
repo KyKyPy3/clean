@@ -12,6 +12,7 @@ import (
 	"github.com/KyKyPy3/clean/internal/user/usecase"
 	mocks "github.com/KyKyPy3/clean/mocks/internal_/user/domain/service"
 	"github.com/KyKyPy3/clean/pkg/logger"
+
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"

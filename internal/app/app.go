@@ -16,6 +16,7 @@ import (
 	"github.com/KyKyPy3/clean/internal/user/domain/service"
 	"github.com/KyKyPy3/clean/internal/user/usecase"
 	"github.com/KyKyPy3/clean/pkg/logger"
+	"github.com/go-playground/validator"
 	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -29,6 +30,17 @@ const (
 	shutdownTimeout = 30 * time.Second
 	maxHeaderBytes  = 1 << 20
 )
+
+type CustomValidator struct {
+	validator *validator.Validate
+}
+
+func (cv *CustomValidator) Validate(i interface{}) error {
+	if err := cv.validator.Struct(i); err != nil {
+		return err
+	}
+	return nil
+}
 
 type App struct {
 	cfg         *config.Config
@@ -57,9 +69,12 @@ func (a *App) Run(ctx context.Context) error {
 	)
 	testMetric.Add(ctx, 1)
 
+	a.echo.Validator = &CustomValidator{validator: validator.New()}
+
 	a.echo.Use(middleware.Logger())
 	a.echo.Use(middleware.Recover())
 	a.echo.Use(middleware.CSRF())
+	a.echo.Use(middleware.CORS())
 	a.echo.Use(otelecho.Middleware("clean"))
 	mountPoint := a.echo.Group("/api/v1")
 	a.connectHandlers(mountPoint)
@@ -121,5 +136,5 @@ func (a *App) connectHandlers(mountPoint *echo.Group) {
 	userService := service.NewUserService(userPgStorage, userRedisStorage, a.logger)
 	userUsecase := usecase.NewUserUsecase(userService, a.logger)
 
-	v1.NewUserHandlers(mountPoint, userUsecase)
+	v1.NewUserHandlers(mountPoint, userUsecase, a.logger)
 }

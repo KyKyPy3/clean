@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"fmt"
+
 	"github.com/KyKyPy3/clean/internal/common"
 	"github.com/KyKyPy3/clean/internal/user/domain/entity"
 	"github.com/KyKyPy3/clean/internal/user/domain/service"

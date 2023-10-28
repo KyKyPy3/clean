@@ -52,7 +52,7 @@ mockery: bin/mockery ## Installs mockery (mocks generation)
 
 bin/mockery: VERSION := 2.36.0
 bin/mockery: GITHUB  := vektra/mockery
-bin/mockery: ARCHIVE := mockery_$(VERSION)_$(OSTYPE)_amd64.tar.gz
+bin/mockery: ARCHIVE := mockery_$(VERSION)_$(OSTYPE)_x86_64.tar.gz
 bin/mockery: bin
 	@ printf "Install mockery... "
 	@ curl -Ls $(call github_url) | tar -zOxf - mockery > $@ && chmod +x $@

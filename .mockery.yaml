@@ -8,3 +8,6 @@ packages:
   github.com/KyKyPy3/clean/internal/user/domain/service:
     config:
       recursive: True
+  github.com/KyKyPy3/clean/internal/user/controller/http/v1:
+    config:
+        recursive: True
