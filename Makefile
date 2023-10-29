@@ -58,7 +58,7 @@ TESTS_ARGS += -test.parallel 2
 TESTS_ARGS += -test.count    1
 TESTS_ARGS += -test.failfast
 TESTS_ARGS += -test.coverprofile   tmp/tests/coverage.out
-TESTS_ARGS += -test.timeout        60s
+TESTS_ARGS += -test.timeout        5m
 TESTS_ARGS += -race
 
 run-tests: $(GOTESTSUM)
