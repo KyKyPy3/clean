@@ -27,8 +27,12 @@ WORKDIR /app
 COPY --from=builder /app/clean /app/
 COPY --from=builder /app/config/config-docker.yml /app/config
 
+RUN addgroup -S clean && adduser -S clean -G clean
+RUN chmod +x /app/clean
+USER clean
+
 ENV config=config/config-docker.yml
 
 EXPOSE 8080
 
-CMD /app/clean
+ENTRYPOINT ["/app/clean"]

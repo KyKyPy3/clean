@@ -62,10 +62,22 @@ bin/mockery: bin
 GOLANGCI := $(shell command -v golangci-lint || echo "bin/golangci-lint")
 golangci-lint: bin/golangci-lint ## Installs golangci-lint (linter)
 
-bin/golangci-lint: VERSION := 1.55.0
+bin/golangci-lint: VERSION := 1.55.1
 bin/golangci-lint: GITHUB  := golangci/golangci-lint
 bin/golangci-lint: ARCHIVE := golangci-lint-$(VERSION)-$(OSTYPE)-amd64.tar.gz
 bin/golangci-lint: bin
 	@ printf "Install golangci-linter... "
-	@ curl -Ls $(call github_url) | tar -zOxf - golangci-lint > $@ && chmod +x $@
+	@ curl -Ls $(call github_url) | tar -zOxvf - $(shell printf golangci-lint-$(VERSION)-$(OSTYPE)-amd64/golangci-lint) > $@ && chmod +x $@
+	@ echo "done."
+
+# ~~ [ swag ] ~~~ https://github.com/swaggo/swag ~~~~~~~~~~~~~~~~~~~~~
+SWAG := $(shell command -v swag || echo "bin/swag")
+swag: bin/swag ## Installs swag (doc generator)
+
+bin/swag: VERSION := 1.16.2
+bin/swag: GITHUB  := swaggo/swag
+bin/swag: ARCHIVE := swag_$(VERSION)_$(OSTYPE)_x86_64.tar.gz
+bin/swag: bin
+	@ printf "Install swag... "
+	@ curl -Ls $(call github_url) | tar -zOxf - swag > $@ && chmod +x $@
 	@ echo "done."

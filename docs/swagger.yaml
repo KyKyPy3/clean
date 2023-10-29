@@ -1,0 +1,39 @@
+definitions:
+  entity.User:
+    properties:
+      createdAt:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      middlename:
+        type: string
+      name:
+        type: string
+      password:
+        type: string
+      surname:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /user:
+    post:
+      consumes:
+      - application/json
+      description: Create user handler
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/entity.User'
+      summary: Create user
+      tags:
+      - User
+swagger: "2.0"

@@ -118,6 +118,14 @@ func (h *UserHandlers) Fetch(c echo.Context) error {
 	)
 }
 
+// Create godoc
+// @Summary Create user
+// @Description Create user handler
+// @Tags User
+// @Accept json
+// @Produce json
+// @Success 201 {object} entity.User
+// @Router /user [post]
 func (h *UserHandlers) Create(c echo.Context) error {
 	return c.JSON(http.StatusCreated, "")
 }

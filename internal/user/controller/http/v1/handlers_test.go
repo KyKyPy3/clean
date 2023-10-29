@@ -98,7 +98,8 @@ func TestFetchHandler(t *testing.T) {
 			assert.Equal(t, tc.respStatus, rec.Code)
 
 			var d *dto.ResponseDTO
-			json.NewDecoder(rec.Body).Decode(&d)
+			err = json.NewDecoder(rec.Body).Decode(&d)
+			assert.NoError(t, err)
 
 			assert.Equal(t, tc.respMessage, d.Message)
 			assert.Equal(t, tc.respError, d.Error)

@@ -76,6 +76,12 @@ func (a *App) Run(ctx context.Context) error {
 	a.echo.Use(middleware.CSRF())
 	a.echo.Use(middleware.CORS())
 	a.echo.Use(otelecho.Middleware("clean"))
+
+	a.echo.GET("/healthz", func(c echo.Context) error {
+		a.logger.Info("Health check triggered")
+		return c.JSON(http.StatusOK, map[string]string{"status": "OK"})
+	})
+
 	mountPoint := a.echo.Group("/api/v1")
 	a.connectHandlers(mountPoint)
 
