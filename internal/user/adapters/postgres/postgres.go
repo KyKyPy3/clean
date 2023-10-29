@@ -57,6 +57,10 @@ func (u *userPgStorage) Fetch(ctx context.Context, limit int64) ([]entity.User, 
 		user := DbUser{}
 
 		err = rows.StructScan(&user)
+		if err != nil {
+			u.logger.Errorf("Can't scan user data. err: %w", err)
+			return []entity.User{}, errors.Wrap(err, "Fetch.StructScan")
+		}
 
 		result = append(result, UserFromDB(user))
 	}
@@ -87,7 +91,7 @@ func (u *userPgStorage) Create(ctx context.Context, d entity.User) (entity.User,
 		user.Surname,
 		user.Middlename,
 		user.Email,
-	).StructScan(user); err != nil {
+	).StructScan(&user); err != nil {
 		return entity.User{}, errors.Wrap(err, "Create.QueryRowxContext")
 	}
 
@@ -128,6 +132,10 @@ func (u *userPgStorage) GetByID(ctx context.Context, id common.ID) (entity.User,
 		user := DbUser{}
 
 		err = rows.StructScan(&user)
+		if err != nil {
+			u.logger.Errorf("Can't scan user data. err: %w", err)
+			return entity.User{}, errors.Wrap(err, "GetByID.StructScan")
+		}
 
 		result = append(result, UserFromDB(user))
 	}
@@ -173,6 +181,10 @@ func (u *userPgStorage) GetByEmail(ctx context.Context, email string) (entity.Us
 		user := DbUser{}
 
 		err = rows.StructScan(&user)
+		if err != nil {
+			u.logger.Errorf("Can't scan user data. err: %w", err)
+			return entity.User{}, errors.Wrap(err, "GetByEmail.StructScan")
+		}
 
 		result = append(result, UserFromDB(user))
 	}

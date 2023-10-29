@@ -1,205 +1,220 @@
-package postgres_test
+package postgres
 
 import (
 	"context"
-	"fmt"
-	"log"
-	"os"
+	"database/sql"
+	"regexp"
 	"testing"
 	"time"
 
-	"github.com/golang-migrate/migrate/v4"
-	"github.com/golang-migrate/migrate/v4/database/postgres"
-	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/KyKyPy3/clean/config"
+	"github.com/KyKyPy3/clean/pkg/logger"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
-	"github.com/ory/dockertest/v3"
-	"github.com/ory/dockertest/v3/docker"
-	"github.com/stretchr/testify/require"
-
-	"github.com/KyKyPy3/clean/config"
-	psql "github.com/KyKyPy3/clean/internal/user/adapters/postgres"
-	"github.com/KyKyPy3/clean/internal/user/domain/service"
-	"github.com/KyKyPy3/clean/pkg/logger"
+	"github.com/stretchr/testify/assert"
 )
-
-const (
-	dbDriver   = "postgres"
-	dbSource   = "postgresql://test:test@localhost:%s/clean_db?sslmode=disable"
-	migrations = "file://../../../../db/migrations"
-	seed       = "file://../../../../db/seed"
-)
-
-var (
-	testDB   *sqlx.DB
-	repo     service.UserPgStorage
-	pool     *dockertest.Pool
-	resource *dockertest.Resource
-)
-
-func TestMain(m *testing.M) {
-	// Set up the Docker test environment
-	setupDockerTestEnvironment()
-
-	// Apply database migrations
-	applyDatabaseMigrations()
-
-	// Apply database seed
-	applyDatabaseSeed()
-
-	// Create logger
-	// TODO: add discard logger here
-	loggerCfg := &config.LoggerConfig{
-		Mode:     "development",
-		Level:    "debug",
-		Encoding: "json",
-	}
-	logger := logger.NewLogger(loggerCfg)
-
-	repo = psql.NewUserPgStorage(testDB, logger)
-
-	// Run the tests
-	code := m.Run()
-
-	// Tear down the Docker test environment
-	tearDownDockerTestEnvironment()
-
-	// Exit with the appropriate exit code
-	os.Exit(code)
-}
 
 func TestFetch(t *testing.T) {
-	users, err := repo.Fetch(context.Background(), 10)
-	require.NoError(t, err)
-	require.Len(t, users, 2)
-}
+	// Create logger
+	// TODO: add discard logger here
+	loggerCfg := &config.LoggerConfig{Mode: "test"}
+	logger := logger.NewLogger(loggerCfg)
+	logger.Init()
 
-func TestGetByID(t *testing.T) {
-	user, err := repo.GetByID(context.Background(), uuid.MustParse("2b0c8791-2136-46b6-bc38-b33038ca2e80"))
-	require.NoError(t, err)
-	require.NotNil(t, user)
-}
-
-func setupDockerTestEnvironment() {
-	setupTimeoutDuration := 5 * time.Minute
-	setupDone := make(chan bool)
-
-	go func() {
-		var err error
-		pool, err = dockertest.NewPool("")
+	t.Run("Successfully retrieve users", func(t *testing.T) {
+		mockDB, mock, err := sqlmock.New()
 		if err != nil {
-			log.Fatalf("Could not construct pool: %s", err)
+			t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
 		}
+		defer mockDB.Close()
+		sqlxDB := sqlx.NewDb(mockDB, "sqlmock")
 
-		err = pool.Client.Ping()
-		if err != nil {
-			log.Fatalf("Could not connect to Docker: %s", err)
-		}
+		repo := NewUserPgStorage(sqlxDB, logger)
 
-		resource, err = pool.RunWithOptions(&dockertest.RunOptions{
-			Repository: "postgres",
-			Tag:        "latest",
-			Env: []string{
-				"POSTGRES_USER=test",
-				"POSTGRES_PASSWORD=test",
-				"POSTGRES_DB=clean_db",
-				"listen_addresses = '*'",
-			},
-		}, func(config *docker.HostConfig) {
-			config.AutoRemove = true
-			config.RestartPolicy = docker.RestartPolicy{
-				Name: "no",
-			}
-		})
+		var limit int64 = 10
 
-		if err != nil {
-			log.Fatalf("Failed to create resource: %s", err)
-		}
+		userID := uuid.New()
+		name := "Ivan"
+		surname := "Ivanov"
+		middlename := "Ivanovich"
+		email := "ivan@email.com"
+		createdAt := time.Now()
+		updatedAt := time.Now()
 
-		if err := pool.Retry(func() error {
-			var err error
-			testDB, err = sqlx.Open(dbDriver, fmt.Sprintf(dbSource, resource.GetPort("5432/tcp")))
-			if err != nil {
-				return err
-			}
+		rows := mock.
+			NewRows([]string{
+				"id",
+				"name",
+				"surname",
+				"middlename",
+				"email",
+				"created_at",
+				"updated_at",
+			}).
+			AddRow(
+				userID,
+				name,
+				surname,
+				middlename,
+				email,
+				createdAt,
+				updatedAt,
+			)
 
-			return testDB.Ping()
-		}); err != nil {
-			log.Fatalf("Could not connect to database: %s", err)
-		}
+		mock.ExpectPrepare(regexp.QuoteMeta(fetchSQL))
+		mock.ExpectQuery(regexp.QuoteMeta(fetchSQL)).
+			WithArgs(limit).
+			WillReturnRows(rows)
 
-		setupDone <- true
-	}()
+		users, err := repo.Fetch(context.TODO(), limit)
+		assert.NoError(t, err)
 
-	select {
-	case <-setupDone:
-		log.Println("Docker test environment setup completed")
-	case <-time.After(setupTimeoutDuration):
-		log.Println("Docker test environment setup timed out")
-	}
-}
+		assert.Len(t, users, 1)
 
-func applyDatabaseMigrations() {
-	driver, err := postgres.WithInstance(testDB.DB, &postgres.Config{})
-	if err != nil {
-		log.Fatalf("Could not create migration driver: %s", err)
-	}
+		assert.Equal(t, users[0].ID, userID)
+		assert.Equal(t, users[0].Name, name)
+		assert.Equal(t, users[0].Surname, surname)
+		assert.Equal(t, users[0].Middlename, middlename)
+		assert.Equal(t, users[0].Email, email)
+		assert.WithinDuration(t, users[0].CreatedAt, createdAt, 0)
+		assert.WithinDuration(t, users[0].UpdatedAt, updatedAt, 0)
 
-	migration, err := migrate.NewWithDatabaseInstance(
-		migrations,
-		"postgres",
-		driver,
-	)
-	if err != nil {
-		log.Fatalf("Failed to initialize migration instance: %s", err)
-	}
-
-	if err := migration.Up(); err != nil && err != migrate.ErrNoChange {
-		closeMigrate(migration)
-
-		log.Fatalf("Failed to apply migrations: %s", err)
-	}
-
-	log.Println("Database migrations applied successfully")
-}
-
-func applyDatabaseSeed() {
-	driver, err := postgres.WithInstance(testDB.DB, &postgres.Config{
-		MigrationsTable: "seed",
+		// ensure that all expectations are met in the mock
+		errExpectations := mock.ExpectationsWereMet()
+		assert.Nil(t, errExpectations)
 	})
-	if err != nil {
-		log.Fatalf("Could not create migration driver: %s", err)
-	}
 
-	migration, err := migrate.NewWithDatabaseInstance(
-		seed,
-		"postgres",
-		driver,
-	)
-	if err != nil {
-		log.Fatalf("Failed to initialize migration instance: %s", err)
-	}
+	t.Run("Successfully retrieve empty result", func(t *testing.T) {
+		mockDB, mock, err := sqlmock.New()
+		if err != nil {
+			t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+		}
+		defer mockDB.Close()
+		sqlxDB := sqlx.NewDb(mockDB, "sqlmock")
 
-	if err := migration.Up(); err != nil && err != migrate.ErrNoChange {
-		closeMigrate(migration)
-		log.Fatalf("Failed to apply seed: %s", err)
-	}
+		repo := NewUserPgStorage(sqlxDB, logger)
 
-	log.Println("Database seed applied successfully")
-}
+		var limit int64 = 10
 
-func tearDownDockerTestEnvironment() {
-	if err := pool.Purge(resource); err != nil {
-		log.Fatalf("Could not purge Docker resource: %s", err)
-	}
-}
+		rows := mock.
+			NewRows([]string{
+				"id",
+				"name",
+				"surname",
+				"middlename",
+				"email",
+				"created_at",
+				"updated_at",
+			})
 
-func closeMigrate(migrate *migrate.Migrate) {
-	sourceErr, databaseErr := migrate.Close()
-	if sourceErr != nil {
-		log.Fatal("error closing migration source", sourceErr)
-	}
-	if databaseErr != nil {
-		log.Fatal("error closing database source", databaseErr)
-	}
+		mock.ExpectPrepare(regexp.QuoteMeta(fetchSQL))
+		mock.ExpectQuery(regexp.QuoteMeta(fetchSQL)).
+			WithArgs(limit).
+			WillReturnRows(rows)
+
+		users, err := repo.Fetch(context.TODO(), limit)
+		assert.NoError(t, err)
+
+		assert.Len(t, users, 0)
+
+		// ensure that all expectations are met in the mock
+		errExpectations := mock.ExpectationsWereMet()
+		assert.Nil(t, errExpectations)
+	})
+
+	t.Run("Failed retrieve users", func(t *testing.T) {
+		mockDB, mock, err := sqlmock.New()
+		if err != nil {
+			t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+		}
+		defer mockDB.Close()
+		sqlxDB := sqlx.NewDb(mockDB, "sqlmock")
+
+		repo := NewUserPgStorage(sqlxDB, logger)
+
+		var limit int64 = 10
+
+		mock.ExpectPrepare(regexp.QuoteMeta(fetchSQL))
+		mock.ExpectQuery(regexp.QuoteMeta(fetchSQL)).
+			WithArgs(limit).
+			WillReturnError(sql.ErrNoRows)
+
+		users, err := repo.Fetch(context.TODO(), limit)
+		assert.ErrorIs(t, err, sql.ErrNoRows)
+		assert.Len(t, users, 0)
+
+		// ensure that all expectations are met in the mock
+		errExpectations := mock.ExpectationsWereMet()
+		assert.Nil(t, errExpectations)
+	})
+
+	t.Run("Failed prepare statement", func(t *testing.T) {
+		mockDB, mock, err := sqlmock.New()
+		if err != nil {
+			t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+		}
+		defer mockDB.Close()
+		sqlxDB := sqlx.NewDb(mockDB, "sqlmock")
+
+		repo := NewUserPgStorage(sqlxDB, logger)
+
+		var limit int64 = 10
+
+		mock.ExpectPrepare(regexp.QuoteMeta(fetchSQL)).
+			WillReturnError(sql.ErrConnDone)
+
+		users, err := repo.Fetch(context.TODO(), limit)
+		assert.ErrorIs(t, err, sql.ErrConnDone)
+		assert.Len(t, users, 0)
+
+		// ensure that all expectations are met in the mock
+		errExpectations := mock.ExpectationsWereMet()
+		assert.Nil(t, errExpectations)
+	})
+
+	t.Run("Failed scan user", func(t *testing.T) {
+		mockDB, mock, err := sqlmock.New()
+		if err != nil {
+			t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+		}
+		defer mockDB.Close()
+		sqlxDB := sqlx.NewDb(mockDB, "sqlmock")
+
+		repo := NewUserPgStorage(sqlxDB, logger)
+
+		var limit int64 = 10
+
+		rows := mock.
+			NewRows([]string{
+				"id",
+				"name",
+				"surname",
+				"middlename",
+				"email",
+				"created_at",
+				"updated_at",
+			}).
+			AddRow(
+				nil,
+				nil,
+				nil,
+				nil,
+				nil,
+				nil,
+				nil,
+			)
+
+		mock.ExpectPrepare(regexp.QuoteMeta(fetchSQL))
+		mock.ExpectQuery(regexp.QuoteMeta(fetchSQL)).
+			WithArgs(limit).
+			WillReturnRows(rows)
+
+		_, err = repo.Fetch(context.TODO(), limit)
+		assert.Error(t, err)
+
+		// ensure that all expectations are met in the mock
+		errExpectations := mock.ExpectationsWereMet()
+		assert.Nil(t, errExpectations)
+	})
 }

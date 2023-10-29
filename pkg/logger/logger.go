@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"bytes"
 	"errors"
 	"os"
 	"syscall"
@@ -11,7 +12,8 @@ import (
 )
 
 const (
-	DevelopmentMode = "Development"
+	DevelopmentMode = "development"
+	TestMode        = "test"
 	ConsoleEncoder  = "console"
 )
 
@@ -57,7 +59,13 @@ func (l *logger) Init() {
 	if !ok {
 		level = zap.DebugLevel
 	}
-	logWriter := zapcore.AddSync(os.Stderr)
+
+	var logWriter zapcore.WriteSyncer
+	if l.cfg.Mode == TestMode {
+		logWriter = zapcore.AddSync(&bytes.Buffer{})
+	} else {
+		logWriter = zapcore.AddSync(os.Stderr)
+	}
 
 	var encoderCfg zapcore.EncoderConfig
 	if l.cfg.Mode == DevelopmentMode {

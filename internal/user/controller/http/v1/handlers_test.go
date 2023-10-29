@@ -35,12 +35,9 @@ func TestFetchHandler(t *testing.T) {
 
 	// Create logger
 	// TODO: add discard logger here
-	loggerCfg := &config.LoggerConfig{
-		Mode:     "development",
-		Level:    "debug",
-		Encoding: "json",
-	}
+	loggerCfg := &config.LoggerConfig{Mode: "test"}
 	logger := logger.NewLogger(loggerCfg)
+	logger.Init()
 
 	cases := []struct {
 		name        string
