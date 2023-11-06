@@ -33,6 +33,7 @@ func TestFetch(t *testing.T) {
 		repo := NewUserPgStorage(sqlxDB, logger)
 
 		var limit int64 = 10
+		var offset int64 = 0
 
 		userID := uuid.New()
 		name := "Ivan"
@@ -64,10 +65,10 @@ func TestFetch(t *testing.T) {
 
 		mock.ExpectPrepare(regexp.QuoteMeta(fetchSQL))
 		mock.ExpectQuery(regexp.QuoteMeta(fetchSQL)).
-			WithArgs(limit).
+			WithArgs(limit, offset).
 			WillReturnRows(rows)
 
-		users, err := repo.Fetch(context.TODO(), limit)
+		users, err := repo.Fetch(context.TODO(), limit, offset)
 		assert.NoError(t, err)
 
 		assert.Len(t, users, 1)
@@ -96,6 +97,7 @@ func TestFetch(t *testing.T) {
 		repo := NewUserPgStorage(sqlxDB, logger)
 
 		var limit int64 = 10
+		var offset int64 = 0
 
 		rows := mock.
 			NewRows([]string{
@@ -110,10 +112,10 @@ func TestFetch(t *testing.T) {
 
 		mock.ExpectPrepare(regexp.QuoteMeta(fetchSQL))
 		mock.ExpectQuery(regexp.QuoteMeta(fetchSQL)).
-			WithArgs(limit).
+			WithArgs(limit, offset).
 			WillReturnRows(rows)
 
-		users, err := repo.Fetch(context.TODO(), limit)
+		users, err := repo.Fetch(context.TODO(), limit, offset)
 		assert.NoError(t, err)
 
 		assert.Len(t, users, 0)
@@ -134,13 +136,14 @@ func TestFetch(t *testing.T) {
 		repo := NewUserPgStorage(sqlxDB, logger)
 
 		var limit int64 = 10
+		var offset int64 = 0
 
 		mock.ExpectPrepare(regexp.QuoteMeta(fetchSQL))
 		mock.ExpectQuery(regexp.QuoteMeta(fetchSQL)).
-			WithArgs(limit).
+			WithArgs(limit, offset).
 			WillReturnError(sql.ErrNoRows)
 
-		users, err := repo.Fetch(context.TODO(), limit)
+		users, err := repo.Fetch(context.TODO(), limit, offset)
 		assert.ErrorIs(t, err, sql.ErrNoRows)
 		assert.Len(t, users, 0)
 
@@ -159,12 +162,10 @@ func TestFetch(t *testing.T) {
 
 		repo := NewUserPgStorage(sqlxDB, logger)
 
-		var limit int64 = 10
-
 		mock.ExpectPrepare(regexp.QuoteMeta(fetchSQL)).
 			WillReturnError(sql.ErrConnDone)
 
-		users, err := repo.Fetch(context.TODO(), limit)
+		users, err := repo.Fetch(context.TODO(), int64(10), int64(0))
 		assert.ErrorIs(t, err, sql.ErrConnDone)
 		assert.Len(t, users, 0)
 
@@ -184,6 +185,7 @@ func TestFetch(t *testing.T) {
 		repo := NewUserPgStorage(sqlxDB, logger)
 
 		var limit int64 = 10
+		var offset int64 = 0
 
 		rows := mock.
 			NewRows([]string{
@@ -207,10 +209,10 @@ func TestFetch(t *testing.T) {
 
 		mock.ExpectPrepare(regexp.QuoteMeta(fetchSQL))
 		mock.ExpectQuery(regexp.QuoteMeta(fetchSQL)).
-			WithArgs(limit).
+			WithArgs(limit, offset).
 			WillReturnRows(rows)
 
-		_, err = repo.Fetch(context.TODO(), limit)
+		_, err = repo.Fetch(context.TODO(), limit, offset)
 		assert.Error(t, err)
 
 		// ensure that all expectations are met in the mock

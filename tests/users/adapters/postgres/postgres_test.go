@@ -11,7 +11,7 @@ import (
 )
 
 func TestFetch(t *testing.T) {
-	users, err := repo.Fetch(context.Background(), 10)
+	users, err := repo.Fetch(context.Background(), 10, 0)
 	require.NoError(t, err)
 	require.Len(t, users, 2)
 }

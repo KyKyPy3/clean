@@ -2,12 +2,13 @@ package usecase
 
 import (
 	"context"
+	"time"
+
 	"github.com/KyKyPy3/clean/internal/common"
 	v1 "github.com/KyKyPy3/clean/internal/user/controller/http/v1"
 	"github.com/KyKyPy3/clean/internal/user/domain/entity"
 	"github.com/KyKyPy3/clean/pkg/logger"
 	"github.com/google/uuid"
-	"time"
 )
 
 const (
@@ -15,7 +16,7 @@ const (
 )
 
 type UserService interface {
-	Fetch(ctx context.Context, limit int64) ([]entity.User, error)
+	Fetch(ctx context.Context, limit, offset int64) ([]entity.User, error)
 	Create(ctx context.Context, data entity.User) (entity.User, error)
 	GetByEmail(ctx context.Context, email string) (entity.User, error)
 	GetByID(ctx context.Context, id common.ID) (entity.User, error)
@@ -34,11 +35,11 @@ func NewUserUsecase(userService UserService, logger logger.Logger) v1.UserUsecas
 	}
 }
 
-func (u *userUsecase) Fetch(ctx context.Context, limit int64) ([]entity.User, error) {
+func (u *userUsecase) Fetch(ctx context.Context, limit, offset int64) ([]entity.User, error) {
 	ctx, cancel := context.WithTimeout(ctx, requestTimeout)
 	defer cancel()
 
-	users, err := u.userService.Fetch(ctx, limit)
+	users, err := u.userService.Fetch(ctx, limit, offset)
 	if err != nil {
 		return []entity.User{}, err
 	}

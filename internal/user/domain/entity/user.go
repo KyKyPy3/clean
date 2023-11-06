@@ -8,6 +8,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// User struct
 type User struct {
 	ID         common.ID
 	Name       string
@@ -20,8 +21,8 @@ type User struct {
 }
 
 // Create, unify and validate user
-func NewUser(name, surname, middlename, email, password string) (*User, error) {
-	u := &User{
+func NewUser(name, surname, middlename, email, password string) (User, error) {
+	u := User{
 		Name:       strings.TrimSpace(name),
 		Surname:    strings.TrimSpace(surname),
 		Middlename: strings.TrimSpace(middlename),
@@ -30,12 +31,12 @@ func NewUser(name, surname, middlename, email, password string) (*User, error) {
 	}
 	password, err := hashPassword(u.Password)
 	if err != nil {
-		return nil, err
+		return User{}, err
 	}
 	u.Password = password
 	err = u.Validate()
 	if err != nil {
-		return nil, err
+		return User{}, err
 	}
 
 	return u, nil

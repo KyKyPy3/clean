@@ -76,23 +76,23 @@ coverage: run-tests
 image-build:
 	@ echo "Docker Build"
 	@ DOCKER_BUILDKIT=0 docker build \
- 		--file docker/Dockerfile \
+ 		--file deploy/Dockerfile \
         --tag clean \
         	.
 
 # ==============================================================================
 # Docker compose commands
 dev:
-	docker-compose -f docker/docker-compose.dev.yml up -d --build
+	docker-compose -f deploy/docker-compose.dev.yml up -d --build
 
 dev-env:
-	@ docker-compose -f docker/docker-compose.dev.yml up -d --build postgresql redis otelcol jaeger prometheus node_exporter
+	@ docker-compose -f deploy/docker-compose.dev.yml up -d --build postgresql redis otelcol jaeger prometheus node_exporter
 
 docker-stop:
-	@ docker-compose -f docker/docker-compose.dev.yml down
+	@ docker-compose -f deploy/docker-compose.dev.yml down
 
 docker-teardown:
-	@ docker-compose -f docker/docker-compose.dev.yml down --remove-orphans -v
+	@ docker-compose -f deploy/docker-compose.dev.yml down --remove-orphans -v
 
 docker-clean:
 	@ docker image prune -f

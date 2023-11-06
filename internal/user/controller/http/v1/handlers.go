@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -15,7 +16,7 @@ import (
 )
 
 type UserUsecase interface {
-	Fetch(ctx context.Context, limit int64) ([]entity.User, error)
+	Fetch(ctx context.Context, limit, offset int64) ([]entity.User, error)
 	Create(ctx context.Context, user entity.User) (entity.User, error)
 	GetByID(ctx context.Context, id common.ID) (entity.User, error)
 	GetByEmail(ctx context.Context, email string) (entity.User, error)
@@ -42,13 +43,15 @@ func (h *UserHandlers) Fetch(c echo.Context) error {
 
 	var errorList []*dto.ValidationError
 	opts := dto.FetchUsersDTO{
-		Limit: 50,
+		Limit:  50,
+		Offset: 0,
 	}
 
 	// Parse given params
 	errs := echo.QueryParamsBinder(c).
 		FailFast(false).
 		Int64("limit", &opts.Limit).
+		Int64("offset", &opts.Offset).
 		BindErrors()
 	if errs != nil {
 		for _, err := range errs {
@@ -94,7 +97,7 @@ func (h *UserHandlers) Fetch(c echo.Context) error {
 		)
 	}
 
-	users, err := h.UserService.Fetch(ctx, opts.Limit)
+	users, err := h.UserService.Fetch(ctx, opts.Limit, opts.Offset)
 	if err != nil {
 		return c.JSON(
 			http.StatusInternalServerError,
@@ -106,13 +109,19 @@ func (h *UserHandlers) Fetch(c echo.Context) error {
 		)
 	}
 
+	respUsers := make([]dto.UserDTO, 0)
+
+	for _, user := range users {
+		respUsers = append(respUsers, dto.UserToResponse(user))
+	}
+
 	return c.JSON(
 		http.StatusOK,
 		dto.ResponseDTO{
 			Status:  http.StatusOK,
 			Message: "success",
 			Data: map[string]interface{}{
-				"users": users,
+				"users": respUsers,
 			},
 		},
 	)
@@ -127,9 +136,92 @@ func (h *UserHandlers) Fetch(c echo.Context) error {
 // @Success 201 {object} entity.User
 // @Router /user [post]
 func (h *UserHandlers) Create(c echo.Context) error {
-	return c.JSON(http.StatusCreated, "")
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	var errorList []*dto.ValidationError
+	params := dto.CreateUserDTO{}
+
+	// Parse given params
+	err := c.Bind(&params)
+	if err != nil {
+		var bindingError *echo.HTTPError
+		var validationErr string
+		if errors.As(err, &bindingError) {
+			validationErr = fmt.Sprint(bindingError.Message)
+		} else {
+			validationErr = err.Error()
+		}
+
+		return c.JSON(
+			http.StatusBadRequest,
+			dto.ResponseDTO{
+				Status:  http.StatusBadRequest,
+				Message: "error",
+				Error:   validationErr,
+			},
+		)
+	}
+
+	err = c.Validate(params)
+	if validationErrors, ok := err.(validator.ValidationErrors); ok {
+		for _, e := range validationErrors {
+			errorList = append(errorList, &dto.ValidationError{
+				Field:  e.Field(),
+				Value:  e.Value(),
+				Reason: e.Tag(),
+			})
+		}
+
+		return c.JSON(
+			http.StatusBadRequest,
+			dto.ResponseDTO{
+				Status:  http.StatusBadRequest,
+				Message: "error",
+				Errors:  errorList,
+			},
+		)
+	}
+
+	user := dto.UserFromRequest(params)
+
+	h.Logger.Debugf("Create user with params %v", user)
+
+	user, err = h.UserService.Create(ctx, user)
+	if err != nil {
+		h.Logger.Errorf("Failed to create user %w", err)
+
+		return c.JSON(
+			http.StatusInternalServerError,
+			dto.ResponseDTO{
+				Status:  http.StatusInternalServerError,
+				Message: "error",
+				Error:   err.Error(),
+			},
+		)
+	}
+
+	return c.JSON(
+		http.StatusOK,
+		dto.ResponseDTO{
+			Status:  http.StatusCreated,
+			Message: "success",
+			Data: map[string]interface{}{
+				"user": dto.UserToResponse(user),
+			},
+		},
+	)
 }
 
+// GetByID godoc
+// @Summary Get by id user
+// @Description Get by id user handler
+// @Tags User
+// @Accept json
+// @Produce json
+// @Param id path int true "user_id"
+// @Success 200 {object} entity.User
+// @Router /user/{id} [get]
 func (h *UserHandlers) GetByID(c echo.Context) error {
 	return c.JSON(http.StatusOK, "")
 }

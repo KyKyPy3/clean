@@ -13,8 +13,8 @@ logger:
 postgres:
   Host: postgres
   Port: 5432
-  User: postgres
-  Password: postgres
+  User: test
+  Password: test
   DbName: clean_db
   SSlMode: false
   MaxOpenConn: 60

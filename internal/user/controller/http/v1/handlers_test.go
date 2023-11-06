@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -42,6 +43,7 @@ func TestFetchHandler(t *testing.T) {
 	cases := []struct {
 		name        string
 		limit       string
+		offset      string
 		respStatus  int
 		respMessage string
 		respErrors  []*dto.ValidationError
@@ -52,6 +54,7 @@ func TestFetchHandler(t *testing.T) {
 		{
 			name:        "Success",
 			limit:       "10",
+			offset:      "0",
 			respStatus:  http.StatusOK,
 			respMessage: "success",
 			respErrors:  nil,
@@ -62,6 +65,7 @@ func TestFetchHandler(t *testing.T) {
 		{
 			name:        "Failed",
 			limit:       "10",
+			offset:      "0",
 			respStatus:  http.StatusInternalServerError,
 			respMessage: "error",
 			respErrors:  nil,
@@ -85,9 +89,14 @@ func TestFetchHandler(t *testing.T) {
 				Logger:      logger,
 			}
 
-			userUsecaseMock.On("Fetch", mock.Anything, mock.Anything).Return(tc.mockResp, tc.mockError).Once()
+			userUsecaseMock.On("Fetch", mock.Anything, mock.Anything, mock.Anything).Return(tc.mockResp, tc.mockError).Once()
 
-			req, err := http.NewRequestWithContext(context.TODO(), echo.GET, "/api/v1/user?limit="+tc.limit, strings.NewReader(""))
+			req, err := http.NewRequestWithContext(
+				context.TODO(),
+				echo.GET,
+				fmt.Sprintf("/api/v1/user?limit=%s&offset=%s", tc.limit, tc.offset),
+				strings.NewReader(""),
+			)
 			require.NoError(t, err)
 
 			rec := httptest.NewRecorder()

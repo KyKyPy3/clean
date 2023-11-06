@@ -6,7 +6,7 @@ services:
     container_name: api
     build:
       context: ..
-      dockerfile: docker/Dockerfile.air
+      dockerfile: deploy/Dockerfile.air
     ports:
       - "8080:8080"
     depends_on:

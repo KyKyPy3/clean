@@ -85,6 +85,11 @@ func TestMain(m *testing.M) {
 		apiResource,
 	}
 
+	for _, res := range resources {
+		// Kill container after 5 minite
+		res.Expire(300)
+	}
+
 	// Run the tests.
 	exitCode := m.Run()
 
@@ -100,6 +105,7 @@ func TestMain(m *testing.M) {
 func deployPostgres(pool *dockertest.Pool) (*dockertest.Resource, error) {
 	resource, err := pool.RunWithOptions(&dockertest.RunOptions{
 		Hostname:     "postgres",
+		Name:         "clean-postgres",
 		Repository:   "postgres",
 		Tag:          "latest",
 		ExposedPorts: []string{"5432"},
@@ -115,6 +121,12 @@ func deployPostgres(pool *dockertest.Pool) (*dockertest.Resource, error) {
 		Networks: []*dockertest.Network{
 			network,
 		},
+	}, func(config *docker.HostConfig) {
+		// set AutoRemove to true so that stopped container goes away by itself
+		config.AutoRemove = true
+		config.RestartPolicy = docker.RestartPolicy{
+			Name: "no",
+		}
 	})
 	if err != nil {
 		return nil, fmt.Errorf("could not start resource: %v", err)
@@ -141,6 +153,7 @@ func deployPostgres(pool *dockertest.Pool) (*dockertest.Resource, error) {
 func deployRedis(pool *dockertest.Pool) (*dockertest.Resource, error) {
 	resource, err := pool.RunWithOptions(&dockertest.RunOptions{
 		Hostname:     "redis",
+		Name:         "clean-redis",
 		Repository:   "redis",
 		Tag:          "latest",
 		ExposedPorts: []string{"6379"},
@@ -150,6 +163,12 @@ func deployRedis(pool *dockertest.Pool) (*dockertest.Resource, error) {
 		Networks: []*dockertest.Network{
 			network,
 		},
+	}, func(config *docker.HostConfig) {
+		// set AutoRemove to true so that stopped container goes away by itself
+		config.AutoRemove = true
+		config.RestartPolicy = docker.RestartPolicy{
+			Name: "no",
+		}
 	})
 	if err != nil {
 		return nil, fmt.Errorf("could not start resource: %v", err)
@@ -184,8 +203,9 @@ func deployAPIContainer(pool *dockertest.Pool) (*dockertest.Resource, error) {
 	// build and run the API container
 	resource, err := pool.BuildAndRunWithBuildOptions(&dockertest.BuildOptions{
 		ContextDir: "../../../..",
-		Dockerfile: "docker/Dockerfile",
+		Dockerfile: "deploy/Dockerfile.test",
 	}, &dockertest.RunOptions{
+		Hostname:     "clean",
 		Name:         "api",
 		ExposedPorts: []string{"8080"},
 		PortBindings: map[docker.Port][]docker.PortBinding{
@@ -195,6 +215,8 @@ func deployAPIContainer(pool *dockertest.Pool) (*dockertest.Resource, error) {
 			network,
 		},
 	}, func(config *docker.HostConfig) {
+		// set AutoRemove to true so that stopped container goes away by itself
+		config.AutoRemove = true
 		config.RestartPolicy = docker.RestartPolicy{
 			Name: "no",
 		}

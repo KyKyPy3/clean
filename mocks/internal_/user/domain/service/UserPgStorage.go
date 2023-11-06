@@ -120,25 +120,25 @@ func (_c *UserPgStorage_Delete_Call) RunAndReturn(run func(context.Context, uuid
 	return _c
 }
 
-// Fetch provides a mock function with given fields: ctx, limit
-func (_m *UserPgStorage) Fetch(ctx context.Context, limit int64) ([]entity.User, error) {
-	ret := _m.Called(ctx, limit)
+// Fetch provides a mock function with given fields: ctx, limit, offset
+func (_m *UserPgStorage) Fetch(ctx context.Context, limit int64, offset int64) ([]entity.User, error) {
+	ret := _m.Called(ctx, limit, offset)
 
 	var r0 []entity.User
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, int64) ([]entity.User, error)); ok {
-		return rf(ctx, limit)
+	if rf, ok := ret.Get(0).(func(context.Context, int64, int64) ([]entity.User, error)); ok {
+		return rf(ctx, limit, offset)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, int64) []entity.User); ok {
-		r0 = rf(ctx, limit)
+	if rf, ok := ret.Get(0).(func(context.Context, int64, int64) []entity.User); ok {
+		r0 = rf(ctx, limit, offset)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]entity.User)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, int64) error); ok {
-		r1 = rf(ctx, limit)
+	if rf, ok := ret.Get(1).(func(context.Context, int64, int64) error); ok {
+		r1 = rf(ctx, limit, offset)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -154,13 +154,14 @@ type UserPgStorage_Fetch_Call struct {
 // Fetch is a helper method to define mock.On call
 //   - ctx context.Context
 //   - limit int64
-func (_e *UserPgStorage_Expecter) Fetch(ctx interface{}, limit interface{}) *UserPgStorage_Fetch_Call {
-	return &UserPgStorage_Fetch_Call{Call: _e.mock.On("Fetch", ctx, limit)}
+//   - offset int64
+func (_e *UserPgStorage_Expecter) Fetch(ctx interface{}, limit interface{}, offset interface{}) *UserPgStorage_Fetch_Call {
+	return &UserPgStorage_Fetch_Call{Call: _e.mock.On("Fetch", ctx, limit, offset)}
 }
 
-func (_c *UserPgStorage_Fetch_Call) Run(run func(ctx context.Context, limit int64)) *UserPgStorage_Fetch_Call {
+func (_c *UserPgStorage_Fetch_Call) Run(run func(ctx context.Context, limit int64, offset int64)) *UserPgStorage_Fetch_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(int64))
+		run(args[0].(context.Context), args[1].(int64), args[2].(int64))
 	})
 	return _c
 }
@@ -170,7 +171,7 @@ func (_c *UserPgStorage_Fetch_Call) Return(_a0 []entity.User, _a1 error) *UserPg
 	return _c
 }
 
-func (_c *UserPgStorage_Fetch_Call) RunAndReturn(run func(context.Context, int64) ([]entity.User, error)) *UserPgStorage_Fetch_Call {
+func (_c *UserPgStorage_Fetch_Call) RunAndReturn(run func(context.Context, int64, int64) ([]entity.User, error)) *UserPgStorage_Fetch_Call {
 	_c.Call.Return(run)
 	return _c
 }

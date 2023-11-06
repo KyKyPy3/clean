@@ -52,8 +52,12 @@ func TestFetch(t *testing.T) {
 	mockUsersList = append(mockUsersList, mockUser)
 
 	t.Run("success", func(t *testing.T) {
-		mockPgUserStorage.EXPECT().Fetch(mock.Anything, mock.AnythingOfType("int64")).Return(mockUsersList, nil).Once()
-		list, err := service.Fetch(context.Background(), int64(1))
+		mockPgUserStorage.EXPECT().Fetch(
+			mock.Anything,
+			mock.AnythingOfType("int64"),
+			mock.AnythingOfType("int64"),
+		).Return(mockUsersList, nil).Once()
+		list, err := service.Fetch(context.Background(), int64(1), int64(0))
 		assert.NoError(t, err)
 		assert.Equal(t, mockUsersList, list)
 
@@ -61,8 +65,12 @@ func TestFetch(t *testing.T) {
 	})
 
 	t.Run("error", func(t *testing.T) {
-		mockPgUserStorage.EXPECT().Fetch(mock.Anything, mock.AnythingOfType("int64")).Return(nil, errors.New("Unexpected")).Once()
-		list, err := service.Fetch(context.TODO(), int64(1))
+		mockPgUserStorage.EXPECT().Fetch(
+			mock.Anything,
+			mock.AnythingOfType("int64"),
+			mock.AnythingOfType("int64"),
+		).Return(nil, errors.New("Unexpected")).Once()
+		list, err := service.Fetch(context.TODO(), int64(1), int64(0))
 
 		assert.Error(t, err)
 		assert.Len(t, list, 0)
@@ -94,7 +102,10 @@ func TestGetByID(t *testing.T) {
 	})
 
 	t.Run("error", func(t *testing.T) {
-		mockPgUserStorage.EXPECT().GetByID(mock.Anything, mock.Anything).Return(entity.User{}, errors.New("Unexpected")).Once()
+		mockPgUserStorage.EXPECT().GetByID(
+			mock.Anything,
+			mock.Anything,
+		).Return(entity.User{}, errors.New("Unexpected")).Once()
 		user, err := service.GetByID(context.Background(), mockUser.ID)
 
 		assert.Error(t, err)
@@ -117,7 +128,10 @@ func TestGetByEmail(t *testing.T) {
 	}
 
 	t.Run("success", func(t *testing.T) {
-		mockPgUserStorage.EXPECT().GetByEmail(mock.Anything, mock.AnythingOfType("string")).Return(mockUser, nil).Once()
+		mockPgUserStorage.EXPECT().GetByEmail(
+			mock.Anything,
+			mock.AnythingOfType("string"),
+		).Return(mockUser, nil).Once()
 		user, err := service.GetByEmail(context.Background(), mockUser.Email)
 		assert.NoError(t, err)
 		assert.Equal(t, mockUser, user)
@@ -126,7 +140,10 @@ func TestGetByEmail(t *testing.T) {
 	})
 
 	t.Run("error", func(t *testing.T) {
-		mockPgUserStorage.EXPECT().GetByEmail(mock.Anything, mock.AnythingOfType("string")).Return(entity.User{}, errors.New("Unexpected")).Once()
+		mockPgUserStorage.EXPECT().GetByEmail(
+			mock.Anything,
+			mock.AnythingOfType("string"),
+		).Return(entity.User{}, errors.New("Unexpected")).Once()
 		user, err := service.GetByEmail(context.Background(), mockUser.Email)
 
 		assert.Error(t, err)

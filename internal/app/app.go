@@ -73,7 +73,7 @@ func (a *App) Run(ctx context.Context) error {
 
 	a.echo.Use(middleware.Logger())
 	a.echo.Use(middleware.Recover())
-	a.echo.Use(middleware.CSRF())
+	// a.echo.Use(middleware.CSRF())
 	a.echo.Use(middleware.CORS())
 	a.echo.Use(otelecho.Middleware("clean"))
 
@@ -132,6 +132,16 @@ func (a *App) connectHandlers(mountPoint *echo.Group) {
 	// Health endpoint
 	health := mountPoint.Group("/health")
 	health.GET("", func(c echo.Context) error {
+		if err := a.pgClient.Ping(); err != nil {
+			a.logger.Errorf("Health check failed: Postgres unavailable")
+			return c.JSON(http.StatusServiceUnavailable, map[string]string{"status": "Postgres is not healthy"})
+		}
+
+		if _, err := a.redisClient.Ping(context.Background()).Result(); err != nil {
+			a.logger.Errorf("Health check failed: Redis unavailable")
+			return c.JSON(http.StatusServiceUnavailable, map[string]string{"status": "Redis is not healthy"})
+		}
+
 		a.logger.Infof("Health check RequestID: %s", c.Response().Header().Get(echo.HeaderXRequestID))
 		return c.JSON(http.StatusOK, map[string]string{"status": "OK"})
 	})

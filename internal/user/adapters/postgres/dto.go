@@ -1,9 +1,10 @@
 package postgres
 
 import (
+	"time"
+
 	"github.com/KyKyPy3/clean/internal/user/domain/entity"
 	"github.com/google/uuid"
-	"time"
 )
 
 // Database user representation
@@ -30,6 +31,7 @@ func UserFromDB(dbUser DbUser) entity.User {
 	}
 }
 
+// Convert domain user model to database model
 func UserToDB(user entity.User) DbUser {
 	return DbUser{
 		ID:         user.ID,

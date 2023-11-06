@@ -11,21 +11,27 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type userPgStorage struct {
 	db     *sqlx.DB
 	logger logger.Logger
+	tracer trace.Tracer
 }
 
 func NewUserPgStorage(db *sqlx.DB, logger logger.Logger) service.UserPgStorage {
-	return &userPgStorage{db: db, logger: logger}
+	return &userPgStorage{
+		db:     db,
+		logger: logger,
+		tracer: otel.Tracer(""),
+	}
 }
 
 // Fetch users with given limit
 // TODO: think about offset - use numeric or time offset?
-func (u *userPgStorage) Fetch(ctx context.Context, limit int64) ([]entity.User, error) {
-	ctx, span := otel.Tracer("").Start(ctx, "userPgStorage.Fetch")
+func (u *userPgStorage) Fetch(ctx context.Context, limit, offset int64) ([]entity.User, error) {
+	ctx, span := u.tracer.Start(ctx, "userPgStorage.Fetch")
 	defer span.End()
 
 	stmt, err := u.db.PreparexContext(ctx, fetchSQL)
@@ -39,9 +45,9 @@ func (u *userPgStorage) Fetch(ctx context.Context, limit int64) ([]entity.User, 
 		}
 	}()
 
-	rows, err := stmt.QueryxContext(ctx, limit)
+	rows, err := stmt.QueryxContext(ctx, limit, offset)
 	if err != nil {
-		u.logger.Errorf("Can't fetch user with limit %d, err: %w", limit, err)
+		u.logger.Errorf("Can't fetch user with limit %d and offset %d, err: %w", limit, offset, err)
 		return []entity.User{}, errors.Wrap(err, "Fetch.QueryxContext")
 	}
 
@@ -70,7 +76,7 @@ func (u *userPgStorage) Fetch(ctx context.Context, limit int64) ([]entity.User, 
 
 // Create new user
 func (u *userPgStorage) Create(ctx context.Context, d entity.User) (entity.User, error) {
-	ctx, span := otel.Tracer("").Start(ctx, "userPgStorage.Create")
+	ctx, span := u.tracer.Start(ctx, "userPgStorage.Create")
 	defer span.End()
 
 	stmt, err := u.db.PreparexContext(ctx, createSQL)
@@ -100,7 +106,7 @@ func (u *userPgStorage) Create(ctx context.Context, d entity.User) (entity.User,
 
 // Get user by id
 func (u *userPgStorage) GetByID(ctx context.Context, id common.ID) (entity.User, error) {
-	ctx, span := otel.Tracer("").Start(ctx, "userPgStorage.GetByID")
+	ctx, span := u.tracer.Start(ctx, "userPgStorage.GetByID")
 	defer span.End()
 
 	stmt, err := u.db.PreparexContext(ctx, getByIDSQL)
@@ -149,7 +155,7 @@ func (u *userPgStorage) GetByID(ctx context.Context, id common.ID) (entity.User,
 
 // Get user by email
 func (u *userPgStorage) GetByEmail(ctx context.Context, email string) (entity.User, error) {
-	ctx, span := otel.Tracer("").Start(ctx, "userPgStorage.GetByEmail")
+	ctx, span := u.tracer.Start(ctx, "userPgStorage.GetByEmail")
 	defer span.End()
 
 	stmt, err := u.db.PreparexContext(ctx, getByEmailSQL)
@@ -198,7 +204,7 @@ func (u *userPgStorage) GetByEmail(ctx context.Context, email string) (entity.Us
 
 // Delete user by provided id
 func (u *userPgStorage) Delete(ctx context.Context, id common.ID) error {
-	ctx, span := otel.Tracer("").Start(ctx, "userPgStorage.Delete")
+	ctx, span := u.tracer.Start(ctx, "userPgStorage.Delete")
 	defer span.End()
 
 	stmt, err := u.db.PreparexContext(ctx, deleteSQL)

@@ -2,16 +2,18 @@ package service
 
 import (
 	"context"
+	"errors"
+
 	"github.com/KyKyPy3/clean/internal/common"
 	"github.com/KyKyPy3/clean/internal/user/domain/entity"
 	"github.com/KyKyPy3/clean/internal/user/usecase"
 	"github.com/KyKyPy3/clean/pkg/logger"
-	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type UserPgStorage interface {
-	Fetch(ctx context.Context, limit int64) ([]entity.User, error)
+	Fetch(ctx context.Context, limit, offset int64) ([]entity.User, error)
 	Create(ctx context.Context, user entity.User) (entity.User, error)
 	GetByID(ctx context.Context, id common.ID) (entity.User, error)
 	GetByEmail(ctx context.Context, email string) (entity.User, error)
@@ -19,7 +21,7 @@ type UserPgStorage interface {
 }
 
 type UserRedisStorage interface {
-	GetByID(ctx context.Context, id uuid.UUID) (entity.User, error)
+	GetByID(ctx context.Context, id common.ID) (entity.User, error)
 	Set(ctx context.Context, key string, user entity.User) error
 	Delete(ctx context.Context, key string) error
 }
@@ -28,17 +30,23 @@ type userService struct {
 	pgStorage    UserPgStorage
 	redisStorage UserRedisStorage
 	logger       logger.Logger
+	tracer       trace.Tracer
 }
 
 func NewUserService(pgStorage UserPgStorage, redisStorage UserRedisStorage, logger logger.Logger) usecase.UserService {
-	return &userService{pgStorage: pgStorage, redisStorage: redisStorage, logger: logger}
+	return &userService{
+		pgStorage:    pgStorage,
+		redisStorage: redisStorage,
+		logger:       logger,
+		tracer:       otel.Tracer(""),
+	}
 }
 
-func (u *userService) Fetch(ctx context.Context, limit int64) ([]entity.User, error) {
-	ctx, span := otel.Tracer("").Start(ctx, "userService.Fetch")
+func (u *userService) Fetch(ctx context.Context, limit, offset int64) ([]entity.User, error) {
+	ctx, span := u.tracer.Start(ctx, "userService.Fetch")
 	defer span.End()
 
-	users, err := u.pgStorage.Fetch(ctx, limit)
+	users, err := u.pgStorage.Fetch(ctx, limit, offset)
 	if err != nil {
 		return []entity.User{}, err
 	}
@@ -47,11 +55,11 @@ func (u *userService) Fetch(ctx context.Context, limit int64) ([]entity.User, er
 }
 
 func (u *userService) Create(ctx context.Context, data entity.User) (entity.User, error) {
-	ctx, span := otel.Tracer("").Start(ctx, "userService.Create")
+	ctx, span := u.tracer.Start(ctx, "userService.Create")
 	defer span.End()
 
 	existed, err := u.pgStorage.GetByEmail(ctx, data.Email)
-	if err != nil {
+	if err != nil && !errors.Is(err, common.ErrNotFound) {
 		return entity.User{}, err
 	}
 
@@ -68,7 +76,7 @@ func (u *userService) Create(ctx context.Context, data entity.User) (entity.User
 }
 
 func (u *userService) GetByEmail(ctx context.Context, email string) (entity.User, error) {
-	ctx, span := otel.Tracer("").Start(ctx, "userService.GetByEmail")
+	ctx, span := u.tracer.Start(ctx, "userService.GetByEmail")
 	defer span.End()
 
 	user, err := u.pgStorage.GetByEmail(ctx, email)
@@ -80,7 +88,7 @@ func (u *userService) GetByEmail(ctx context.Context, email string) (entity.User
 }
 
 func (u *userService) GetByID(ctx context.Context, id common.ID) (entity.User, error) {
-	ctx, span := otel.Tracer("").Start(ctx, "userService.GetByID")
+	ctx, span := u.tracer.Start(ctx, "userService.GetByID")
 	defer span.End()
 
 	user, err := u.pgStorage.GetByID(ctx, id)
@@ -92,7 +100,7 @@ func (u *userService) GetByID(ctx context.Context, id common.ID) (entity.User, e
 }
 
 func (u *userService) Delete(ctx context.Context, id common.ID) error {
-	ctx, span := otel.Tracer("").Start(ctx, "userService.Delete")
+	ctx, span := u.tracer.Start(ctx, "userService.Delete")
 	defer span.End()
 
 	existed, err := u.pgStorage.GetByID(ctx, id)
