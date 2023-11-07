@@ -25,7 +25,7 @@ RUN apk update && apk upgrade && \
 WORKDIR /app
 
 COPY --from=builder /app/clean /app/
-COPY --from=builder /app/config/config-docker.yml /app/config
+COPY --from=builder /app/config/config-test.yml /app/config
 
 RUN addgroup -S clean && adduser -S clean -G clean
 RUN chmod +x /app/clean
