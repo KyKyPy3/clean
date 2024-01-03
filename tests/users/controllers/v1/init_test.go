@@ -2,12 +2,15 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"testing"
+	"time"
 
+	"github.com/go-zookeeper/zk"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -15,6 +18,7 @@ import (
 	"github.com/ory/dockertest/v3"
 	"github.com/ory/dockertest/v3/docker"
 	"github.com/redis/go-redis/v9"
+	"github.com/segmentio/kafka-go"
 )
 
 const (
@@ -63,6 +67,18 @@ func TestMain(m *testing.M) {
 		log.Fatalf("Could not start Redis resource: %v", err)
 	}
 
+	// Deploy the Zookeeper container
+	zookeeperResource, err := deployZookeeper(pool)
+	if err != nil {
+		log.Fatalf("Could not start Zookeeper resource: %v", err)
+	}
+
+	// Deploy the Kafka container
+	kafkaResource, err := deployKafka(pool)
+	if err != nil {
+		log.Fatalf("Could not start Kafka resource: %v", err)
+	}
+
 	err = applyDatabaseMigrations()
 	if err != nil {
 		log.Fatalf("Could not apply postgres migration: %v", err)
@@ -82,12 +98,14 @@ func TestMain(m *testing.M) {
 	resources := []*dockertest.Resource{
 		postgresResource,
 		redisResource,
+		zookeeperResource,
+		kafkaResource,
 		apiResource,
 	}
 
 	for _, res := range resources {
-		// Kill container after 5 minite
-		res.Expire(300)
+		// Kill container after 5 minute
+		_ = res.Expire(300)
 	}
 
 	// Run the tests.
@@ -102,6 +120,7 @@ func TestMain(m *testing.M) {
 	os.Exit(exitCode)
 }
 
+// deployPostgres builds and runs the Postgres container.
 func deployPostgres(pool *dockertest.Pool) (*dockertest.Resource, error) {
 	resource, err := pool.RunWithOptions(&dockertest.RunOptions{
 		Hostname:     "postgres",
@@ -149,12 +168,122 @@ func deployPostgres(pool *dockertest.Pool) (*dockertest.Resource, error) {
 	return resource, nil
 }
 
+// deployKafka builds and runs the Kafka container.
+func deployKafka(pool *dockertest.Pool) (*dockertest.Resource, error) {
+	resource, err := pool.RunWithOptions(&dockertest.RunOptions{
+		Hostname:     "kafka",
+		Name:         "clean-kafka",
+		Repository:   "bitnami/kafka",
+		Tag:          "3.4.1",
+		ExposedPorts: []string{"9093", "9092"},
+		PortBindings: map[docker.Port][]docker.PortBinding{
+			"9093/tcp": {{HostIP: "", HostPort: "9093"}},
+			"9092/tcp": {{HostIP: "", HostPort: "9092"}},
+		},
+		Env: []string{
+			"KAFKA_BROKER_ID=1",
+			"KAFKA_CFG_LISTENERS=PLAINTEXT://:9092",
+			"KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://127.0.0.1:9092",
+			"KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181",
+			"ALLOW_PLAINTEXT_LISTENER=yes",
+			"KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CLIENT:PLAINTEXT,EXTERNAL:PLAINTEXT",
+			"KAFKA_CFG_LISTENERS=CLIENT://:9092,EXTERNAL://:9093",
+			"KAFKA_CFG_ADVERTISED_LISTENERS=CLIENT://kafka:9092,EXTERNAL://localhost:9093",
+			"KAFKA_CFG_INTER_BROKER_LISTENER_NAME=CLIENT",
+		},
+		Networks: []*dockertest.Network{
+			network,
+		},
+	}, func(config *docker.HostConfig) {
+		// set AutoRemove to true so that stopped container goes away by itself
+		config.AutoRemove = true
+		config.RestartPolicy = docker.RestartPolicy{
+			Name: "no",
+		}
+	})
+	if err != nil {
+		return nil, fmt.Errorf("could not start resource: %v", err)
+	}
+
+	// Ensure the Kafka container is ready to accept connections.
+	if err := pool.Retry(func() error {
+		fmt.Println("Checking Kafka connection...")
+
+		conn, err := kafka.DialContext(context.Background(), "tcp", fmt.Sprintf("localhost:%s", resource.GetPort("9093/tcp")))
+		if err != nil {
+			return err
+		}
+		defer conn.Close()
+
+		_, err = conn.Brokers()
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}); err != nil {
+		return nil, fmt.Errorf("could not connect to docker: %v", err)
+	}
+
+	return resource, nil
+}
+
+// deployZookeeper builds and runs the Zookeeper container.
+func deployZookeeper(pool *dockertest.Pool) (*dockertest.Resource, error) {
+	resource, err := pool.RunWithOptions(&dockertest.RunOptions{
+		Hostname:     "zookeeper",
+		Name:         "clean-zookeeper",
+		Repository:   "bitnami/zookeeper",
+		Tag:          "3.9.1",
+		ExposedPorts: []string{"2181"},
+		Env: []string{
+			"ALLOW_ANONYMOUS_LOGIN=yes",
+		},
+		PortBindings: map[docker.Port][]docker.PortBinding{
+			"2181/tcp": {{HostIP: "", HostPort: "2181"}},
+		},
+		Networks: []*dockertest.Network{
+			network,
+		},
+	}, func(config *docker.HostConfig) {
+		// set AutoRemove to true so that stopped container goes away by itself
+		config.AutoRemove = true
+		config.RestartPolicy = docker.RestartPolicy{
+			Name: "no",
+		}
+	})
+	if err != nil {
+		return nil, fmt.Errorf("could not start resource: %v", err)
+	}
+
+	fmt.Println("Checking Zookeeper connection...")
+	conn, _, err := zk.Connect([]string{fmt.Sprintf("127.0.0.1:%s", resource.GetPort("2181/tcp"))}, 10*time.Second)
+	if err != nil {
+		log.Fatalf("could not connect zookeeper: %s", err)
+	}
+	defer conn.Close()
+
+	// Ensure the Zookeeper container is ready to accept connections.
+	if err := pool.Retry(func() error {
+		switch conn.State() {
+		case zk.StateHasSession, zk.StateConnected:
+			return nil
+		default:
+			return errors.New("not yet connected")
+		}
+	}); err != nil {
+		return nil, fmt.Errorf("could not connect to docker: %v", err)
+	}
+
+	return resource, nil
+}
+
 // deployRedis builds and runs the Redis container.
 func deployRedis(pool *dockertest.Pool) (*dockertest.Resource, error) {
 	resource, err := pool.RunWithOptions(&dockertest.RunOptions{
 		Hostname:     "redis",
 		Name:         "clean-redis",
-		Repository:   "redis",
+		Repository:   "redis/redis-stack",
 		Tag:          "latest",
 		ExposedPorts: []string{"6379"},
 		PortBindings: map[docker.Port][]docker.PortBinding{

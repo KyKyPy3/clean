@@ -111,6 +111,9 @@ github.com/go-playground/universal-translator
 # github.com/go-playground/validator v9.31.0+incompatible
 ## explicit
 github.com/go-playground/validator
+# github.com/go-zookeeper/zk v1.0.3
+## explicit; go 1.13
+github.com/go-zookeeper/zk
 # github.com/gobwas/glob v0.2.3
 ## explicit
 github.com/gobwas/glob

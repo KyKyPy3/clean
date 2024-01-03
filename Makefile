@@ -98,6 +98,7 @@ docker-clean:
 	@ docker image prune -f
 	@ docker rmi clean-clean
 	@ docker volume prune -f
+	@ docker network prune
 
 # ==============================================================================
 # Database migrations
