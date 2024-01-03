@@ -17,17 +17,16 @@ func TestFetch(t *testing.T) {
 }
 
 func TestCreate(t *testing.T) {
-	user := entity.User{
-		Name:       "Bob",
-		Surname:    "Smith",
-		Middlename: "Joseph",
-		Email:      "bob@email.com",
-		Password:   "12345",
-	}
+	user := entity.User{}
+	user.SetFirstName("Bob")
+	user.SetLastName("Smith")
+	user.SetMiddleName("Joseph")
+	user.SetEmail("bob@email.com")
+	user.SetPassword("12345")
 
 	user, err := repo.Create(context.Background(), user)
 	require.NoError(t, err)
-	require.NotNil(t, user.ID)
+	require.NotNil(t, user.ID())
 }
 
 func TestGetByID(t *testing.T) {

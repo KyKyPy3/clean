@@ -1,4 +1,4 @@
-export OSTYPE := $(shell uname -s)
+export OSTYPE := $(shell uname -s | tr A-Z a-z)
 
 include ./utils/depends.Makefile
 
@@ -137,5 +137,5 @@ lint: $(GOLANGCI)
 mock: $(MOCKERY)
 	mockery
 
-clean:
+rm:
 	@ rm -rf tmp
