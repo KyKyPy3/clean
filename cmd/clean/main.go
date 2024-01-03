@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/KyKyPy3/clean/config"
 	"github.com/KyKyPy3/clean/internal/app"
+	"github.com/KyKyPy3/clean/pkg/kafka"
 	"github.com/KyKyPy3/clean/pkg/logger"
 	"github.com/KyKyPy3/clean/pkg/metric"
 	"github.com/KyKyPy3/clean/pkg/postgres"
@@ -37,7 +38,7 @@ func main() {
 	if err != nil {
 		appLogger.Fatalf("Can't init Postgres database connection: %s", err)
 	} else {
-		appLogger.Infof("Postgres connected, Status: %#v", pgClient.Stats())
+		appLogger.Infof("Postgres connected")
 	}
 	defer func() { _ = pgClient.Close() }()
 
@@ -49,6 +50,19 @@ func main() {
 		appLogger.Info("Redis connected")
 	}
 	defer func() { _ = redisClient.Close() }()
+
+	// Init kafka client
+	kafkaClient, err := kafka.New(ctx, &cfg.Kafka)
+	if err != nil {
+		appLogger.Fatalf("Can't init Kafka connection: %s", err)
+	} else {
+		brokers, err := kafkaClient.Brokers()
+		if err != nil {
+			appLogger.Fatalf("Can't get kafka brokers: %s", err)
+		}
+		appLogger.Info("Kafka connected to brokers %+v", brokers)
+	}
+	defer func() { _ = kafkaClient.Close() }()
 
 	// Set trace provider
 	traceShutdown, err := tracing.New(ctx, cfg.Server.Name)
@@ -77,7 +91,7 @@ func main() {
 	}()
 
 	// Run our service
-	srv := app.New(cfg, appLogger, pgClient, redisClient)
+	srv := app.New(cfg, appLogger, pgClient, redisClient, kafkaClient)
 	if err = srv.Run(ctx); err != nil {
 		log.Fatal(err)
 	}

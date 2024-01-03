@@ -13,6 +13,7 @@ type Config struct {
 	Logger   LoggerConfig
 	Postgres PostgresConfig
 	Redis    RedisConfig
+	Kafka    KafkaConfig
 }
 
 type ServerConfig struct {
@@ -51,6 +52,11 @@ type RedisConfig struct {
 	MinIdleConn int
 	PoolSize    int
 	PoolTimeout time.Duration
+}
+
+type KafkaConfig struct {
+	Brokers []string
+	GroupID string
 }
 
 func NewConfig(path string) (*Config, error) {

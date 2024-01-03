@@ -21,6 +21,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/redis/go-redis/v9"
+	"github.com/segmentio/kafka-go"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho"
 	"go.opentelemetry.io/otel"
 	otelmetric "go.opentelemetry.io/otel/metric"
@@ -48,15 +49,23 @@ type App struct {
 	logger      logger.Logger
 	pgClient    *sqlx.DB
 	redisClient *redis.Client
+	kafkaClient *kafka.Conn
 }
 
-func New(cfg *config.Config, logger logger.Logger, pgClient *sqlx.DB, redisClient *redis.Client) *App {
+func New(
+	cfg *config.Config,
+	logger logger.Logger,
+	pgClient *sqlx.DB,
+	redisClient *redis.Client,
+	kafkaClient *kafka.Conn,
+) *App {
 	return &App{
 		cfg:         cfg,
 		logger:      logger,
 		pgClient:    pgClient,
 		echo:        echo.New(),
 		redisClient: redisClient,
+		kafkaClient: kafkaClient,
 	}
 }
 

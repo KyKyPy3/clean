@@ -28,4 +28,3 @@ redis:
   MinIdleConn: 200
   PoolSize: 12000
   PoolTimeout: 240s
-  ReadTimeout:

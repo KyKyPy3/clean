@@ -95,47 +95,47 @@ func (l *logger) Init() {
 }
 
 func (l *logger) Debug(args ...interface{}) {
-	l.sugarLogger.Debug(args)
+	l.sugarLogger.Debug(args...)
 }
 
 func (l *logger) Debugf(template string, args ...interface{}) {
-	l.sugarLogger.Debugf(template, args)
+	l.sugarLogger.Debugf(template, args...)
 }
 
 func (l *logger) Info(args ...interface{}) {
-	l.sugarLogger.Info(args)
+	l.sugarLogger.Info(args...)
 }
 
 func (l *logger) Infof(template string, args ...interface{}) {
-	l.sugarLogger.Infof(template, args)
+	l.sugarLogger.Infof(template, args...)
 }
 
 func (l *logger) Warn(args ...interface{}) {
-	l.sugarLogger.Warn(args)
+	l.sugarLogger.Warn(args...)
 }
 
 func (l *logger) Warnf(template string, args ...interface{}) {
-	l.sugarLogger.Warnf(template, args)
+	l.sugarLogger.Warnf(template, args...)
 }
 
 func (l *logger) Error(args ...interface{}) {
-	l.sugarLogger.Error(args)
+	l.sugarLogger.Error(args...)
 }
 
 func (l *logger) Errorf(template string, args ...interface{}) {
-	l.sugarLogger.Errorf(template, args)
+	l.sugarLogger.Errorf(template, args...)
 }
 
 func (l *logger) Fatal(args ...interface{}) {
-	l.sugarLogger.Fatal(args)
+	l.sugarLogger.Fatal(args...)
 }
 
 func (l *logger) Fatalf(template string, args ...interface{}) {
-	l.sugarLogger.Fatalf(template, args)
+	l.sugarLogger.Fatalf(template, args...)
 }
 
 func (l *logger) DPanic(args ...interface{}) {
-	l.sugarLogger.DPanic(args)
+	l.sugarLogger.DPanic(args...)
 }
 
 func (l *logger) DPanicf(template string, args ...interface{}) {

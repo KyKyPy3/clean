@@ -28,4 +28,6 @@ redis:
   MinIdleConn: 200
   PoolSize: 12000
   PoolTimeout: 240s
-  ReadTimeout:
+kafka:
+  brokers: [ "kafka:9092" ]
+  groupID: clean_consumer
