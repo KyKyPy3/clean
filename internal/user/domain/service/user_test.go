@@ -42,12 +42,12 @@ func TestFetch(t *testing.T) {
 
 	service, mockPgUserStorage, _ := prepare(t)
 
-	mockUser := entity.User{
-		Name:       "Alise",
-		Surname:    "Cooper",
-		Middlename: "Saint",
-		Email:      "alise@email.com",
-	}
+	mockUser := entity.User{}
+	mockUser.SetFirstName("Alise")
+	mockUser.SetLastName("Cooper")
+	mockUser.SetMiddleName("Saint")
+	mockUser.SetEmail("alise@email.com")
+
 	mockUsersList := make([]entity.User, 0)
 	mockUsersList = append(mockUsersList, mockUser)
 
@@ -84,17 +84,16 @@ func TestGetByID(t *testing.T) {
 
 	service, mockPgUserStorage, _ := prepare(t)
 
-	mockUser := entity.User{
-		ID:         uuid.New(),
-		Name:       "Alise",
-		Surname:    "Cooper",
-		Middlename: "Saint",
-		Email:      "alise@email.com",
-	}
+	mockUser := entity.User{}
+	mockUser.SetID(uuid.New())
+	mockUser.SetFirstName("Alise")
+	mockUser.SetLastName("Cooper")
+	mockUser.SetMiddleName("Saint")
+	mockUser.SetEmail("alise@email.com")
 
 	t.Run("success", func(t *testing.T) {
 		mockPgUserStorage.EXPECT().GetByID(mock.Anything, mock.Anything).Return(mockUser, nil).Once()
-		user, err := service.GetByID(context.Background(), mockUser.ID)
+		user, err := service.GetByID(context.Background(), mockUser.ID())
 		assert.NoError(t, err)
 		assert.Equal(t, mockUser, user)
 
@@ -106,7 +105,7 @@ func TestGetByID(t *testing.T) {
 			mock.Anything,
 			mock.Anything,
 		).Return(entity.User{}, errors.New("Unexpected")).Once()
-		user, err := service.GetByID(context.Background(), mockUser.ID)
+		user, err := service.GetByID(context.Background(), mockUser.ID())
 
 		assert.Error(t, err)
 		assert.Equal(t, entity.User{}, user)
@@ -120,19 +119,18 @@ func TestGetByEmail(t *testing.T) {
 
 	service, mockPgUserStorage, _ := prepare(t)
 
-	mockUser := entity.User{
-		Name:       "Alise",
-		Surname:    "Cooper",
-		Middlename: "Saint",
-		Email:      "alise@email.com",
-	}
+	mockUser := entity.User{}
+	mockUser.SetFirstName("Alise")
+	mockUser.SetLastName("Cooper")
+	mockUser.SetMiddleName("Saint")
+	mockUser.SetEmail("alise@email.com")
 
 	t.Run("success", func(t *testing.T) {
 		mockPgUserStorage.EXPECT().GetByEmail(
 			mock.Anything,
 			mock.AnythingOfType("string"),
 		).Return(mockUser, nil).Once()
-		user, err := service.GetByEmail(context.Background(), mockUser.Email)
+		user, err := service.GetByEmail(context.Background(), mockUser.Email())
 		assert.NoError(t, err)
 		assert.Equal(t, mockUser, user)
 
@@ -144,7 +142,7 @@ func TestGetByEmail(t *testing.T) {
 			mock.Anything,
 			mock.AnythingOfType("string"),
 		).Return(entity.User{}, errors.New("Unexpected")).Once()
-		user, err := service.GetByEmail(context.Background(), mockUser.Email)
+		user, err := service.GetByEmail(context.Background(), mockUser.Email())
 
 		assert.Error(t, err)
 		assert.Equal(t, entity.User{}, user)
@@ -158,16 +156,15 @@ func TestCreate(t *testing.T) {
 
 	service, mockPgUserStorage, _ := prepare(t)
 
-	mockUser := entity.User{
-		Name:       "Alise",
-		Surname:    "Cooper",
-		Middlename: "Saint",
-		Email:      "alise@email.com",
-	}
+	mockUser := entity.User{}
+	mockUser.SetFirstName("Alise")
+	mockUser.SetLastName("Cooper")
+	mockUser.SetMiddleName("Saint")
+	mockUser.SetEmail("alise@email.com")
 
 	t.Run("success", func(t *testing.T) {
 		tempMockUser := mockUser
-		tempMockUser.ID = uuid.New()
+		tempMockUser.SetID(uuid.New())
 
 		mockPgUserStorage.EXPECT().GetByEmail(mock.Anything, mock.AnythingOfType("string")).Return(entity.User{}, nil).Once()
 		mockPgUserStorage.EXPECT().Create(mock.Anything, mock.AnythingOfType("entity.User")).Return(mockUser, nil).Once()
@@ -182,9 +179,9 @@ func TestCreate(t *testing.T) {
 
 	t.Run("user exist", func(t *testing.T) {
 		tempMockUser := mockUser
-		tempMockUser.ID = uuid.New()
+		tempMockUser.SetID(uuid.New())
 
-		mockPgUserStorage.EXPECT().GetByEmail(mock.Anything, mock.AnythingOfType("string")).Return(mockUser, nil).Once()
+		mockPgUserStorage.EXPECT().GetByEmail(mock.Anything, mock.AnythingOfType("string")).Return(tempMockUser, nil).Once()
 
 		user, err := service.Create(context.Background(), tempMockUser)
 
@@ -197,7 +194,7 @@ func TestCreate(t *testing.T) {
 
 	t.Run("error of user locate", func(t *testing.T) {
 		tempMockUser := mockUser
-		tempMockUser.ID = uuid.New()
+		tempMockUser.SetID(uuid.New())
 
 		mockPgUserStorage.EXPECT().GetByEmail(mock.Anything, mock.AnythingOfType("string")).Return(entity.User{}, errors.New("Unexpected")).Once()
 
@@ -211,7 +208,7 @@ func TestCreate(t *testing.T) {
 
 	t.Run("error", func(t *testing.T) {
 		tempMockUser := mockUser
-		tempMockUser.ID = uuid.New()
+		tempMockUser.SetID(uuid.New())
 
 		mockPgUserStorage.EXPECT().GetByEmail(mock.Anything, mock.AnythingOfType("string")).Return(entity.User{}, nil).Once()
 		mockPgUserStorage.EXPECT().Create(mock.Anything, mock.AnythingOfType("entity.User")).Return(entity.User{}, errors.New("Unexpected")).Once()
@@ -230,18 +227,18 @@ func TestDelete(t *testing.T) {
 
 	service, mockPgUserStorage, _ := prepare(t)
 
-	mockUser := entity.User{
-		Name:       "Alise",
-		Surname:    "Cooper",
-		Middlename: "Saint",
-		Email:      "alise@email.com",
-	}
+	mockUser := entity.User{}
+	mockUser.SetID(uuid.New())
+	mockUser.SetFirstName("Alise")
+	mockUser.SetLastName("Cooper")
+	mockUser.SetMiddleName("Saint")
+	mockUser.SetEmail("alise@email.com")
 
 	t.Run("success", func(t *testing.T) {
 		mockPgUserStorage.EXPECT().GetByID(mock.Anything, mock.Anything).Return(mockUser, nil).Once()
 		mockPgUserStorage.EXPECT().Delete(mock.Anything, mock.Anything).Return(nil).Once()
 
-		err := service.Delete(context.Background(), mockUser.ID)
+		err := service.Delete(context.Background(), mockUser.ID())
 		assert.NoError(t, err)
 
 		mockPgUserStorage.AssertExpectations(t)
@@ -250,7 +247,7 @@ func TestDelete(t *testing.T) {
 	t.Run("user not exist", func(t *testing.T) {
 		mockPgUserStorage.EXPECT().GetByID(mock.Anything, mock.Anything).Return(entity.User{}, nil).Once()
 
-		err := service.Delete(context.Background(), mockUser.ID)
+		err := service.Delete(context.Background(), mockUser.ID())
 
 		assert.Error(t, err)
 
@@ -260,7 +257,7 @@ func TestDelete(t *testing.T) {
 	t.Run("error check user", func(t *testing.T) {
 		mockPgUserStorage.EXPECT().GetByID(mock.Anything, mock.Anything).Return(entity.User{}, errors.New("Unexpected")).Once()
 
-		err := service.Delete(context.Background(), mockUser.ID)
+		err := service.Delete(context.Background(), mockUser.ID())
 
 		assert.Error(t, err)
 
@@ -271,7 +268,7 @@ func TestDelete(t *testing.T) {
 		mockPgUserStorage.EXPECT().GetByID(mock.Anything, mock.Anything).Return(mockUser, nil).Once()
 		mockPgUserStorage.EXPECT().Delete(mock.Anything, mock.Anything).Return(errors.New("Unexpected")).Once()
 
-		err := service.Delete(context.Background(), mockUser.ID)
+		err := service.Delete(context.Background(), mockUser.ID())
 
 		assert.Error(t, err)
 

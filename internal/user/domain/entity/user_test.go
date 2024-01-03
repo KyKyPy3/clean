@@ -11,11 +11,11 @@ import (
 func TestNewUser(t *testing.T) {
 	user, err := entity.NewUser("Alise", "Cooper", "Lee", "alise@email.com", "12345")
 	assert.Nil(t, err)
-	assert.Equal(t, user.Name, "Alise")
-	assert.Equal(t, user.Surname, "Cooper")
-	assert.Equal(t, user.Middlename, "Lee")
-	assert.Equal(t, user.Email, "alise@email.com")
-	assert.NotEqual(t, user.Password, "12345")
+	assert.Equal(t, user.FirstName(), "Alise")
+	assert.Equal(t, user.LastName(), "Cooper")
+	assert.Equal(t, user.MiddleName(), "Lee")
+	assert.Equal(t, user.Email(), "alise@email.com")
+	assert.NotEqual(t, user.Password(), "12345")
 }
 
 func TestPasswordValidation(t *testing.T) {

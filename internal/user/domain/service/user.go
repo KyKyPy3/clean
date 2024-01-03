@@ -8,6 +8,7 @@ import (
 	"github.com/KyKyPy3/clean/internal/user/domain/entity"
 	"github.com/KyKyPy3/clean/internal/user/usecase"
 	"github.com/KyKyPy3/clean/pkg/logger"
+	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -58,12 +59,12 @@ func (u *userService) Create(ctx context.Context, data entity.User) (entity.User
 	ctx, span := u.tracer.Start(ctx, "userService.Create")
 	defer span.End()
 
-	existed, err := u.pgStorage.GetByEmail(ctx, data.Email)
+	existed, err := u.pgStorage.GetByEmail(ctx, data.Email())
 	if err != nil && !errors.Is(err, common.ErrNotFound) {
 		return entity.User{}, err
 	}
 
-	if existed != (entity.User{}) {
+	if existed.ID() != uuid.Nil {
 		return entity.User{}, common.ErrEntityExist
 	}
 
@@ -108,7 +109,7 @@ func (u *userService) Delete(ctx context.Context, id common.ID) error {
 		return err
 	}
 
-	if existed == (entity.User{}) {
+	if existed.ID() == uuid.Nil {
 		return common.ErrNotFound
 	}
 

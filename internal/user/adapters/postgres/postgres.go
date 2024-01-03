@@ -36,7 +36,7 @@ func (u *userPgStorage) Fetch(ctx context.Context, limit, offset int64) ([]entit
 
 	stmt, err := u.db.PreparexContext(ctx, fetchSQL)
 	if err != nil {
-		return []entity.User{}, errors.Wrap(err, "Fetch.PreparexContext")
+		return nil, errors.Wrap(err, "Fetch.PreparexContext")
 	}
 	defer func() {
 		err := stmt.Close()
@@ -48,7 +48,7 @@ func (u *userPgStorage) Fetch(ctx context.Context, limit, offset int64) ([]entit
 	rows, err := stmt.QueryxContext(ctx, limit, offset)
 	if err != nil {
 		u.logger.Errorf("Can't fetch user with limit %d and offset %d, err: %w", limit, offset, err)
-		return []entity.User{}, errors.Wrap(err, "Fetch.QueryxContext")
+		return nil, errors.Wrap(err, "Fetch.QueryxContext")
 	}
 
 	defer func() {
@@ -65,7 +65,7 @@ func (u *userPgStorage) Fetch(ctx context.Context, limit, offset int64) ([]entit
 		err = rows.StructScan(&user)
 		if err != nil {
 			u.logger.Errorf("Can't scan user data. err: %w", err)
-			return []entity.User{}, errors.Wrap(err, "Fetch.StructScan")
+			return nil, errors.Wrap(err, "Fetch.StructScan")
 		}
 
 		result = append(result, UserFromDB(user))
@@ -104,7 +104,7 @@ func (u *userPgStorage) Create(ctx context.Context, d entity.User) (entity.User,
 	return UserFromDB(user), nil
 }
 
-// Get user by id
+// GetByID Get user by id
 func (u *userPgStorage) GetByID(ctx context.Context, id common.ID) (entity.User, error) {
 	ctx, span := u.tracer.Start(ctx, "userPgStorage.GetByID")
 	defer span.End()
@@ -153,7 +153,7 @@ func (u *userPgStorage) GetByID(ctx context.Context, id common.ID) (entity.User,
 	return result[0], nil
 }
 
-// Get user by email
+// GetByEmail Get user by email
 func (u *userPgStorage) GetByEmail(ctx context.Context, email string) (entity.User, error) {
 	ctx, span := u.tracer.Start(ctx, "userPgStorage.GetByEmail")
 	defer span.End()

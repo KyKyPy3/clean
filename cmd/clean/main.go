@@ -19,6 +19,7 @@ func main() {
 	ctx := context.Background()
 	log.Println("Starting clean microservice")
 
+	// Try to get config file name from environment
 	configFile := utils.GetEnvVar("config", DefaultConfigFile)
 
 	cfg, err := config.NewConfig(configFile)
@@ -38,7 +39,7 @@ func main() {
 	} else {
 		appLogger.Infof("Postgres connected, Status: %#v", pgClient.Stats())
 	}
-	defer pgClient.Close()
+	defer func() { _ = pgClient.Close() }()
 
 	// Init redis client
 	redisClient, err := redis.New(ctx, &cfg.Redis)
@@ -47,7 +48,7 @@ func main() {
 	} else {
 		appLogger.Info("Redis connected")
 	}
-	defer redisClient.Close()
+	defer func() { _ = redisClient.Close() }()
 
 	// Set trace provider
 	traceShutdown, err := tracing.New(ctx, cfg.Server.Name)

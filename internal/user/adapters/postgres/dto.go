@@ -7,7 +7,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// Database user representation
+// DbUser Database user representation
 type DbUser struct {
 	ID         uuid.UUID `db:"id"`
 	Name       string    `db:"name"`
@@ -18,26 +18,27 @@ type DbUser struct {
 	UpdatedAt  time.Time `db:"updated_at"`
 }
 
-// Convert database user model to domain model
+// UserFromDB Convert database user model to domain model
 func UserFromDB(dbUser DbUser) entity.User {
-	return entity.User{
-		ID:         dbUser.ID,
-		Name:       dbUser.Name,
-		Surname:    dbUser.Surname,
-		Middlename: dbUser.Middlename,
-		Email:      dbUser.Email,
-		CreatedAt:  dbUser.CreatedAt,
-		UpdatedAt:  dbUser.UpdatedAt,
-	}
+	u := entity.User{}
+	u.SetID(dbUser.ID)
+	u.SetFirstName(dbUser.Name)
+	u.SetLastName(dbUser.Surname)
+	u.SetMiddleName(dbUser.Middlename)
+	u.SetEmail(dbUser.Email)
+	u.SetCreatedAt(dbUser.CreatedAt)
+	u.SetUpdatedAt(dbUser.CreatedAt)
+
+	return u
 }
 
-// Convert domain user model to database model
+// UserToDB Convert domain user model to database model
 func UserToDB(user entity.User) DbUser {
 	return DbUser{
-		ID:         user.ID,
-		Name:       user.Name,
-		Surname:    user.Surname,
-		Middlename: user.Middlename,
-		Email:      user.Email,
+		ID:         user.ID(),
+		Name:       user.FirstName(),
+		Surname:    user.LastName(),
+		Middlename: user.MiddleName(),
+		Email:      user.Email(),
 	}
 }

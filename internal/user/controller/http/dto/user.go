@@ -37,19 +37,20 @@ type CreateUserDTO struct {
 
 // Convert database user model to domain model
 func UserFromRequest(reqUser CreateUserDTO) entity.User {
-	return entity.User{
-		Name:       reqUser.Name,
-		Surname:    reqUser.Surname,
-		Middlename: reqUser.Middlename,
-		Email:      reqUser.Email,
-	}
+	u := entity.User{}
+	u.SetFirstName(reqUser.Name)
+	u.SetLastName(reqUser.Surname)
+	u.SetMiddleName(reqUser.Middlename)
+	u.SetEmail(reqUser.Email)
+
+	return u
 }
 
 // Convert domain user model to response model
 func UserToResponse(user entity.User) UserDTO {
 	return UserDTO{
-		Name:       user.Name,
-		Surname:    user.Surname,
-		Middlename: user.Middlename,
+		Name:       user.FirstName(),
+		Surname:    user.LastName(),
+		Middlename: user.MiddleName(),
 	}
 }

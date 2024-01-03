@@ -10,15 +10,9 @@ import (
 
 type Config struct {
 	Server   ServerConfig
-	Postgres PostgresConfig
 	Logger   LoggerConfig
+	Postgres PostgresConfig
 	Redis    RedisConfig
-}
-
-type LoggerConfig struct {
-	Mode     string
-	Level    string
-	Encoding string
 }
 
 type ServerConfig struct {
@@ -29,6 +23,12 @@ type ServerConfig struct {
 	ReadTimeout  time.Duration
 	WriteTimeout time.Duration
 	Name         string
+}
+
+type LoggerConfig struct {
+	Mode     string
+	Level    string
+	Encoding string
 }
 
 type PostgresConfig struct {
@@ -62,7 +62,7 @@ func NewConfig(path string) (*Config, error) {
 
 	if err := v.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			return nil, errors.New("Config file not found")
+			return nil, errors.New("config file not found")
 		}
 
 		return nil, err
