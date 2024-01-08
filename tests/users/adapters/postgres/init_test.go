@@ -2,14 +2,15 @@ package postgres_test
 
 import (
 	"fmt"
+	"github.com/KyKyPy3/clean/internal/infrastructure/config"
+	psql "github.com/KyKyPy3/clean/internal/modules/user/infrastructure/gateway/postgres"
+	trmsqlx "github.com/avito-tech/go-transaction-manager/drivers/sqlx/v2"
 	"log"
 	"os"
 	"testing"
 	"time"
 
-	"github.com/KyKyPy3/clean/config"
-	psql "github.com/KyKyPy3/clean/internal/user/adapters/postgres"
-	"github.com/KyKyPy3/clean/internal/user/domain/service"
+	"github.com/KyKyPy3/clean/internal/modules/user/domain/service"
 	"github.com/KyKyPy3/clean/pkg/logger"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
@@ -49,7 +50,7 @@ func TestMain(m *testing.M) {
 	logger := logger.NewLogger(loggerCfg)
 	logger.Init()
 
-	repo = psql.NewUserPgStorage(testDB, logger)
+	repo = psql.NewUserPgStorage(testDB, trmsqlx.DefaultCtxGetter, logger)
 
 	// Run the tests
 	code := m.Run()

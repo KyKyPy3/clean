@@ -11,7 +11,7 @@ bin:
 MIGRATE := $(shell command -v migrate || echo "bin/migrate")
 migrate: bin/migrate ## Install migrate (database migration)
 
-bin/migrate: VERSION := 4.16.2
+bin/migrate: VERSION := 4.17.0
 bin/migrate: GITHUB  := golang-migrate/migrate
 bin/migrate: ARCHIVE := migrate.$(OSTYPE)-amd64.tar.gz
 bin/migrate: bin
@@ -37,12 +37,13 @@ bin/gotestsum: bin
 TPARSE := $(shell command -v tparse || echo "bin/tparse")
 tparse: bin/tparse ## Installs tparse (testing go code)
 
-bin/tparse: VERSION := 0.8.3
+bin/tparse: VERSION := 0.13.2
 bin/tparse: GITHUB  := mfridman/tparse
-bin/tparse: ARCHIVE := tparse_$(VERSION)_$(OSTYPE)_x86_64.tar.gz
+bin/tparse: ARCHIVE := tparse_$(OSTYPE)_x86_64
 bin/tparse: bin
 	@ printf "Install tparse... "
-	@ curl -Ls $(shell echo $(call github_url) | tr A-Z a-z) | tar -zOxf - tparse > $@ && chmod +x $@
+	@ printf "Download from https://github.com/$(GITHUB)/releases/download/v$(VERSION)/$(ARCHIVE)... "
+	@ curl -Ls $(shell echo $(call github_url) | tr A-Z a-z) > $@ && chmod +x $@
 	@ echo "done."
 
 # ~~ [ mockery ] ~~~ https://github.com/vektra/mockery ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -50,7 +51,7 @@ bin/tparse: bin
 MOCKERY := $(shell command -v mockery || echo "bin/mockery")
 mockery: bin/mockery ## Installs mockery (mocks generation)
 
-bin/mockery: VERSION := 2.36.0
+bin/mockery: VERSION := 2.39.1
 bin/mockery: GITHUB  := vektra/mockery
 bin/mockery: ARCHIVE := mockery_$(VERSION)_$(OSTYPE)_x86_64.tar.gz
 bin/mockery: bin

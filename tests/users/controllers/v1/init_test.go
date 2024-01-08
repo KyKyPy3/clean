@@ -96,11 +96,11 @@ func TestMain(m *testing.M) {
 	}
 
 	resources := []*dockertest.Resource{
+		apiResource,
 		postgresResource,
 		redisResource,
 		zookeeperResource,
 		kafkaResource,
-		apiResource,
 	}
 
 	for _, res := range resources {

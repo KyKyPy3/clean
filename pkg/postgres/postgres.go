@@ -3,9 +3,11 @@ package postgres
 import (
 	"context"
 	"fmt"
-	"github.com/KyKyPy3/clean/config"
+
 	_ "github.com/jackc/pgx/stdlib"
 	"github.com/jmoiron/sqlx"
+
+	"github.com/KyKyPy3/clean/internal/infrastructure/config"
 )
 
 func New(ctx context.Context, cfg *config.PostgresConfig) (*sqlx.DB, error) {

@@ -3,10 +3,10 @@ package logger
 import (
 	"bytes"
 	"errors"
+	"github.com/KyKyPy3/clean/internal/infrastructure/config"
 	"os"
 	"syscall"
 
-	"github.com/KyKyPy3/clean/config"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )

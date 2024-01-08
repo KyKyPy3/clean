@@ -5,9 +5,9 @@ outpkg: "mocks"
 filename: "{{.InterfaceName}}.go"
 all: True
 packages:
-  github.com/KyKyPy3/clean/internal/user/domain/service:
+  github.com/KyKyPy3/clean/internal/modules/user/domain/service:
     config:
       recursive: True
-  github.com/KyKyPy3/clean/internal/user/controller/http/v1:
+  github.com/KyKyPy3/clean/internal/modules/user/infrastructure/controller/http/v1:
     config:
         recursive: True

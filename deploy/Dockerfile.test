@@ -2,7 +2,9 @@
 FROM golang:1.21.5-alpine3.19 as builder
 
 RUN apk update && apk upgrade && \
-    apk --update add git make bash build-base
+    apk --update add git make bash build-base tzdata && \
+    mkdir /app && \
+    mkdir /app/config
 
 WORKDIR /app
 
@@ -13,19 +15,6 @@ RUN go mod download
 COPY . .
 
 RUN make build
-
-# Distribution
-FROM alpine:latest
-
-RUN apk update && apk upgrade && \
-    apk --update --no-cache add tzdata && \
-    mkdir /app && \
-    mkdir /app/config
-
-WORKDIR /app
-
-COPY --from=builder /app/clean /app/
-COPY --from=builder /app/config/config-test.yml /app/config
 
 RUN addgroup -S clean && adduser -S clean -G clean
 RUN chmod +x /app/clean

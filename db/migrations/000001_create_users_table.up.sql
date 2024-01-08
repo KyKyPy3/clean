@@ -1,15 +1,9 @@
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-CREATE EXTENSION citext;
-
-CREATE DOMAIN EMAIL AS CITEXT
-    CHECK ( value ~ '^[a-zA-Z0-9.!#$%&''*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$' );
-
 CREATE TABLE users (
-    id           UUID PRIMARY KEY                    DEFAULT uuid_generate_v4(),
+    id           VARCHAR(36) PRIMARY KEY,
     name         TEXT                      NOT NULL  CHECK ( name <> '' ),
     surname      TEXT                      NOT NULL  CHECK ( surname <> '' ),
     middlename   TEXT                      NOT NULL  CHECK ( middlename <> '' ),
-    email        EMAIL                     NOT NULL  UNIQUE,
+    email        VARCHAR(255)              NOT NULL  UNIQUE,
     created_at   TIMESTAMP WITH TIME ZONE  NOT NULL  DEFAULT NOW(),
     updated_at   TIMESTAMP WITH TIME ZONE            DEFAULT CURRENT_TIMESTAMP
 );

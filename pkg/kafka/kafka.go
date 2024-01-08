@@ -2,9 +2,8 @@ package kafka
 
 import (
 	"context"
+	"github.com/KyKyPy3/clean/internal/infrastructure/config"
 	"github.com/segmentio/kafka-go"
-
-	"github.com/KyKyPy3/clean/config"
 )
 
 func New(ctx context.Context, config *config.KafkaConfig) (*kafka.Conn, error) {

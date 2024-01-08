@@ -3,7 +3,7 @@ package redis
 import (
 	"context"
 	"fmt"
-	"github.com/KyKyPy3/clean/config"
+	"github.com/KyKyPy3/clean/internal/infrastructure/config"
 	"github.com/redis/go-redis/v9"
 	"time"
 )
