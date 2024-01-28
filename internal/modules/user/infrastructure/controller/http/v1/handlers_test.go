@@ -15,7 +15,6 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	"github.com/KyKyPy3/clean/internal/infrastructure/config"
 	common_http "github.com/KyKyPy3/clean/internal/infrastructure/controller/http"
 	"github.com/KyKyPy3/clean/internal/modules/user/domain/entity"
 	"github.com/KyKyPy3/clean/internal/modules/user/infrastructure/controller/http/v1"
@@ -37,9 +36,10 @@ func TestFetchHandler(t *testing.T) {
 
 	// Create logger
 	// TODO: add discard logger here
-	loggerCfg := &config.LoggerConfig{Mode: "test"}
-	logger := logger.NewLogger(loggerCfg)
-	logger.Init()
+	log := logger.NewLogger(logger.Config{
+		Mode: "test",
+	})
+	log.Init()
 
 	cases := []struct {
 		name        string
@@ -87,7 +87,7 @@ func TestFetchHandler(t *testing.T) {
 
 			handler := v1.UserHandlers{
 				UserService: userUsecaseMock,
-				Logger:      logger,
+				Logger:      log,
 			}
 
 			userUsecaseMock.On("Fetch", mock.Anything, mock.Anything, mock.Anything).Return(tc.mockResp, tc.mockError).Once()

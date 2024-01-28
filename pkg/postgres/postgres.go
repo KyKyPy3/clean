@@ -3,14 +3,25 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"time"
 
 	_ "github.com/jackc/pgx/stdlib"
 	"github.com/jmoiron/sqlx"
-
-	"github.com/KyKyPy3/clean/internal/infrastructure/config"
 )
 
-func New(ctx context.Context, cfg *config.PostgresConfig) (*sqlx.DB, error) {
+type Config struct {
+	Host         string
+	Port         string
+	User         string
+	Password     string
+	DbName       string
+	SSLMode      bool
+	MaxOpenConn  int
+	ConnLifetime time.Duration
+	MaxIdleTime  time.Duration
+}
+
+func New(ctx context.Context, cfg Config) (*sqlx.DB, error) {
 	dataSourceName := fmt.Sprintf("host=%s port=%s user=%s dbname=%s sslmode=disable password=%s",
 		cfg.Host,
 		cfg.Port,

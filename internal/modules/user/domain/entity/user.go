@@ -2,10 +2,10 @@ package entity
 
 import (
 	"fmt"
+	"github.com/KyKyPy3/clean/internal/domain/core"
 	"strings"
 	"time"
 
-	"github.com/KyKyPy3/clean/internal/domain"
 	"github.com/KyKyPy3/clean/internal/domain/common"
 	"github.com/KyKyPy3/clean/internal/modules/user/domain/value_object"
 	"golang.org/x/crypto/bcrypt"
@@ -25,11 +25,11 @@ type User struct {
 // NewUser - creates a new User instance with the provided username, password, and email.
 func NewUser(fullName value_object.FullName, email common.Email, password string) (User, error) {
 	if fullName.IsEmpty() {
-		return User{}, fmt.Errorf("user fullname is empty, err: %w", domain.ErrInvalidEntity)
+		return User{}, fmt.Errorf("user fullname is empty, err: %w", core.ErrInvalidEntity)
 	}
 
 	if email.IsEmpty() {
-		return User{}, fmt.Errorf("user email is empty, err: %w", domain.ErrInvalidEntity)
+		return User{}, fmt.Errorf("user email is empty, err: %w", core.ErrInvalidEntity)
 	}
 
 	user := User{

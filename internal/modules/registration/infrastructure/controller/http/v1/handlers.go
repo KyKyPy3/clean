@@ -4,31 +4,40 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"go.opentelemetry.io/otel"
 	"net/http"
 	"time"
 
 	"github.com/go-playground/validator"
 	"github.com/labstack/echo/v4"
+	"go.opentelemetry.io/otel/trace"
 
-	common_dto "github.com/KyKyPy3/clean/internal/infrastructure/controller/http"
-	"github.com/KyKyPy3/clean/internal/modules/registration/domain/entity"
+	http_dto "github.com/KyKyPy3/clean/internal/infrastructure/controller/http"
+	"github.com/KyKyPy3/clean/internal/modules/registration/application"
+	"github.com/KyKyPy3/clean/internal/modules/registration/application/command"
 	"github.com/KyKyPy3/clean/internal/modules/registration/infrastructure/controller/http/dto"
 	"github.com/KyKyPy3/clean/pkg/logger"
 )
 
-type RegistrationUsecase interface {
-	Create(ctx context.Context, user entity.Registration) error
+type RegistrationApp interface {
+	Create(ctx context.Context, email string) error
 }
 
 type RegistrationHandlers struct {
-	RegistrationService RegistrationUsecase
-	Logger              logger.Logger
+	registrationApp *application.Application
+	logger          logger.Logger
+	tracer          trace.Tracer
 }
 
-func NewRegistrationHandlers(v1 *echo.Group, registrationService RegistrationUsecase, logger logger.Logger) {
-	handlers := &RegistrationHandlers{RegistrationService: registrationService, Logger: logger}
+func NewRegistrationHandlers(v1 *echo.Group, registrationApp *application.Application, logger logger.Logger) {
+	handlers := &RegistrationHandlers{
+		registrationApp: registrationApp,
+		logger:          logger,
+		tracer:          otel.Tracer(""),
+	}
 
 	v1.POST("/registration", handlers.Create)
+	v1.GET("/registration/:id", handlers.Confirm)
 }
 
 // Create godoc
@@ -37,13 +46,16 @@ func NewRegistrationHandlers(v1 *echo.Group, registrationService RegistrationUse
 // @Tags Registration
 // @Accept json
 // @Produce json
-// @Success 201 {object} entity.Registration
+// @Success 201
 // @Router /registration [post]
 func (r *RegistrationHandlers) Create(c echo.Context) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(c.Request().Context(), 10*time.Second)
 	defer cancel()
 
-	var errorList []*common_dto.ValidationError
+	ctx, span := r.tracer.Start(ctx, "RegistrationHandlers.Create")
+	defer span.End()
+
+	var errorList []*http_dto.ValidationError
 	params := dto.CreateRegistrationDTO{}
 
 	// Parse given params
@@ -59,7 +71,7 @@ func (r *RegistrationHandlers) Create(c echo.Context) error {
 
 		return c.JSON(
 			http.StatusBadRequest,
-			common_dto.ResponseDTO{
+			http_dto.ResponseDTO{
 				Status:  http.StatusBadRequest,
 				Message: "error",
 				Error:   validationErr,
@@ -70,7 +82,7 @@ func (r *RegistrationHandlers) Create(c echo.Context) error {
 	err = c.Validate(params)
 	if validationErrors, ok := err.(validator.ValidationErrors); ok {
 		for _, e := range validationErrors {
-			errorList = append(errorList, &common_dto.ValidationError{
+			errorList = append(errorList, &http_dto.ValidationError{
 				Field:  e.Field(),
 				Value:  e.Value(),
 				Reason: e.Tag(),
@@ -79,7 +91,7 @@ func (r *RegistrationHandlers) Create(c echo.Context) error {
 
 		return c.JSON(
 			http.StatusBadRequest,
-			common_dto.ResponseDTO{
+			http_dto.ResponseDTO{
 				Status:  http.StatusBadRequest,
 				Message: "error",
 				Errors:  errorList,
@@ -87,27 +99,18 @@ func (r *RegistrationHandlers) Create(c echo.Context) error {
 		)
 	}
 
-	registration, err := dto.RegistrationFromRequest(params)
-	if err != nil {
-		return c.JSON(
-			http.StatusBadRequest,
-			common_dto.ResponseDTO{
-				Status:  http.StatusBadRequest,
-				Message: "error",
-				Errors:  errorList,
-			},
-		)
+	r.logger.Debugf("Create registration with params %v", params)
+
+	cmd := command.CreateRegistrationCommand{
+		Email: params.Email,
 	}
-
-	r.Logger.Debugf("Create registration with params %v", registration)
-
-	err = r.RegistrationService.Create(ctx, registration)
+	err = r.registrationApp.Commands.CreateRegistration.Handle(ctx, cmd)
 	if err != nil {
-		r.Logger.Errorf("Failed to create registration %w", err)
+		r.logger.Errorf("Failed to create registration %w", err)
 
 		return c.JSON(
 			http.StatusInternalServerError,
-			common_dto.ResponseDTO{
+			http_dto.ResponseDTO{
 				Status:  http.StatusInternalServerError,
 				Message: "error",
 				Error:   err.Error(),
@@ -117,12 +120,48 @@ func (r *RegistrationHandlers) Create(c echo.Context) error {
 
 	return c.JSON(
 		http.StatusOK,
-		common_dto.ResponseDTO{
+		http_dto.ResponseDTO{
 			Status:  http.StatusCreated,
 			Message: "success",
-			Data: map[string]interface{}{
-				"user": dto.RegistrationToResponse(registration),
-			},
 		},
 	)
+}
+
+// Confirm godoc
+// @Summary Confirm registration
+// @Description Confirm registration handler
+// @Tags Registration
+// @Accept json
+// @Produce json
+// @Success 201
+// @Router /registration [get]
+func (r *RegistrationHandlers) Confirm(c echo.Context) error {
+	ctx, cancel := context.WithTimeout(c.Request().Context(), 10*time.Second)
+	defer cancel()
+
+	ctx, span := r.tracer.Start(ctx, "RegistrationHandlers.Сonfirm")
+	defer span.End()
+
+	id := c.Param("id")
+
+	r.logger.Debugf("Confirm registration with id '%v'", id)
+
+	cmd := command.ConfirmRegistrationCommand{
+		ID: id,
+	}
+	err := r.registrationApp.Commands.ConfirmRegistration.Handle(ctx, cmd)
+	if err != nil {
+		r.logger.Errorf("Failed to confirm registration %w", err)
+
+		return c.JSON(
+			http.StatusInternalServerError,
+			http_dto.ResponseDTO{
+				Status:  http.StatusInternalServerError,
+				Message: "error",
+				Error:   err.Error(),
+			},
+		)
+	}
+
+	return c.NoContent(http.StatusOK)
 }

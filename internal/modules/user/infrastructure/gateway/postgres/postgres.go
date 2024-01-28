@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"github.com/KyKyPy3/clean/internal/domain/core"
 
 	trmsqlx "github.com/avito-tech/go-transaction-manager/drivers/sqlx/v2"
 	"github.com/jmoiron/sqlx"
@@ -10,7 +11,6 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 
-	"github.com/KyKyPy3/clean/internal/domain"
 	"github.com/KyKyPy3/clean/internal/domain/common"
 	"github.com/KyKyPy3/clean/internal/modules/user/domain/entity"
 	"github.com/KyKyPy3/clean/internal/modules/user/domain/service"
@@ -169,7 +169,7 @@ func (u *userPgStorage) GetByID(ctx context.Context, id common.UID) (entity.User
 	}
 
 	if len(result) == 0 {
-		return entity.User{}, domain.ErrNotFound
+		return entity.User{}, core.ErrNotFound
 	}
 
 	return result[0], nil
@@ -224,7 +224,7 @@ func (u *userPgStorage) GetByEmail(ctx context.Context, email common.Email) (ent
 	}
 
 	if len(result) == 0 {
-		return entity.User{}, domain.ErrNotFound
+		return entity.User{}, core.ErrNotFound
 	}
 
 	return result[0], nil

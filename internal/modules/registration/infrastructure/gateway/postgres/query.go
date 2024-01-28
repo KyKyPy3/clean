@@ -6,6 +6,9 @@ var (
 	//go:embed query/create.sql
 	createSQL string
 
-	//go:embed query/getByEmail.sql
-	getByEmailSQL string
+	//go:embed query/getByID.sql
+	getByIDSQL string
+
+	//go:embed query/update.sql
+	updateSQL string
 )

@@ -2,9 +2,11 @@ package kafka
 
 import (
 	"context"
-	"github.com/KyKyPy3/clean/pkg/logger"
+
 	"github.com/segmentio/kafka-go"
 	"go.opentelemetry.io/otel"
+
+	"github.com/KyKyPy3/clean/pkg/logger"
 )
 
 type Producer interface {
@@ -18,8 +20,8 @@ type producer struct {
 	w       *kafka.Writer
 }
 
-// NewProducer create new kafka producer
-func NewProducer(log logger.Logger, brokers []string) *producer {
+// NewProducer create new queue producer
+func NewProducer(log logger.Logger, brokers []string) Producer {
 	return &producer{log: log, brokers: brokers, w: NewWriter(brokers, kafka.LoggerFunc(log.Errorf))}
 }
 

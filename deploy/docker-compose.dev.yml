@@ -32,6 +32,12 @@ services:
       - ${REDIS_HOST_PORT:-6379}:${REDIS_PORT:-6379}
       - "8001:8001"
     restart: on-failure
+    healthcheck:
+      test: [ "CMD", "redis-cli","ping" ]
+      interval: 10s
+      timeout: 60s
+      retries: 5
+      start_period: 10s
     networks:
       - web_api
 
@@ -111,7 +117,7 @@ services:
       # blocks until kafka is reachable
       kafka-topics.sh --bootstrap-server=kafka:9092 --list
       echo -e 'Creating kafka topics'
-      kafka-topics.sh --create --if-not-exists --topic test_topic --replication-factor=1 --partitions=1 --bootstrap-server=kafka:9092
+      kafka-topics.sh --create --if-not-exists --topic registration --replication-factor=1 --partitions=1 --bootstrap-server=kafka:9092
       echo -e 'Successfully created the following topics:'
       kafka-topics.sh --bootstrap-server=kafka:9092 --list
       "

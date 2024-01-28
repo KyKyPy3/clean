@@ -4,12 +4,11 @@ import (
 	"context"
 	"errors"
 	"github.com/KyKyPy3/clean/internal/domain/common"
-	"github.com/KyKyPy3/clean/internal/infrastructure/config"
+	"github.com/KyKyPy3/clean/internal/domain/core"
 	"github.com/KyKyPy3/clean/internal/modules/user/application/usecase"
 	"github.com/KyKyPy3/clean/internal/modules/user/domain/value_object"
 	"testing"
 
-	"github.com/KyKyPy3/clean/internal/domain"
 	"github.com/KyKyPy3/clean/internal/modules/user/domain/entity"
 	"github.com/KyKyPy3/clean/internal/modules/user/domain/service"
 	mocks "github.com/KyKyPy3/clean/mocks/internal_/modules/user/domain/service"
@@ -25,13 +24,11 @@ func prepare(t *testing.T) (usecase.UserService, *mocks.UserPgStorage, *mocks.Us
 	mockPgUserStorage := new(mocks.UserPgStorage)
 	mockRedisUserStorage := new(mocks.UserRedisStorage)
 
-	loggerCfg := &config.LoggerConfig{
+	log := logger.NewLogger(logger.Config{
 		Mode:     "development",
 		Level:    "debug",
 		Encoding: "json",
-	}
-
-	log := logger.NewLogger(loggerCfg)
+	})
 
 	srv := service.NewUserService(mockPgUserStorage, mockRedisUserStorage, log)
 
@@ -188,7 +185,7 @@ func TestCreate(t *testing.T) {
 
 		assert.Error(t, err)
 		assert.Equal(t, entity.User{}, user)
-		assert.Equal(t, err, domain.ErrAlreadyExist)
+		assert.Equal(t, err, core.ErrAlreadyExist)
 
 		mockPgUserStorage.AssertExpectations(t)
 	})

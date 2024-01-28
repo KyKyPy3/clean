@@ -4,9 +4,10 @@ import (
 	"context"
 	"time"
 
-	"github.com/KyKyPy3/clean/pkg/logger"
 	"github.com/segmentio/kafka-go"
 	"golang.org/x/sync/errgroup"
+
+	"github.com/KyKyPy3/clean/pkg/logger"
 )
 
 const maxWait = 1 * time.Second

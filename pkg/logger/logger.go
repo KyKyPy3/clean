@@ -3,13 +3,18 @@ package logger
 import (
 	"bytes"
 	"errors"
-	"github.com/KyKyPy3/clean/internal/infrastructure/config"
 	"os"
 	"syscall"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
+
+type Config struct {
+	Mode     string
+	Level    string
+	Encoding string
+}
 
 const (
 	DevelopmentMode = "development"
@@ -46,11 +51,11 @@ type Logger interface {
 }
 
 type logger struct {
-	cfg         *config.LoggerConfig
+	cfg         Config
 	sugarLogger *zap.SugaredLogger
 }
 
-func NewLogger(cfg *config.LoggerConfig) *logger {
+func NewLogger(cfg Config) *logger {
 	return &logger{cfg: cfg}
 }
 

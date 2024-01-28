@@ -6,19 +6,28 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/KyKyPy3/clean/internal/infrastructure/config"
-	kafkaClient "github.com/KyKyPy3/clean/pkg/kafka"
-	"github.com/segmentio/kafka-go"
 	"time"
 
 	trmsqlx "github.com/avito-tech/go-transaction-manager/drivers/sqlx/v2"
 	"github.com/jmoiron/sqlx"
 
+	"github.com/KyKyPy3/clean/internal/infrastructure/config"
 	"github.com/KyKyPy3/clean/pkg/latch"
 	"github.com/KyKyPy3/clean/pkg/logger"
 )
 
+type Publisher interface {
+	Publish(ctx context.Context, event Message) error
+}
+
+type Message struct {
+	Kind    string
+	Topic   string
+	Payload []byte
+}
+
 type Event interface {
+	Kind() string
 }
 
 type Options struct {
@@ -28,33 +37,36 @@ type Options struct {
 type outbox struct {
 	Id       int64
 	Topic    string
+	Kind     string
 	Payload  []byte
 	Consumed bool
 }
 
 type Manager struct {
-	cfg    *config.Config
-	db     *sqlx.DB
-	getter *trmsqlx.CtxGetter
-	logger logger.Logger
+	cfg       *config.Config
+	db        *sqlx.DB
+	getter    *trmsqlx.CtxGetter
+	logger    logger.Logger
+	publisher Publisher
 }
 
-func New(cfg *config.Config, db *sqlx.DB, getter *trmsqlx.CtxGetter, logger logger.Logger) Manager {
+func New(cfg *config.Config, db *sqlx.DB, publisher Publisher, getter *trmsqlx.CtxGetter, logger logger.Logger) Manager {
 	return Manager{
-		db:     db,
-		getter: getter,
-		logger: logger,
-		cfg:    cfg,
+		db:        db,
+		getter:    getter,
+		logger:    logger,
+		cfg:       cfg,
+		publisher: publisher,
 	}
 }
 
-func (m Manager) Publish(ctx context.Context, event Event) error {
+func (m Manager) Publish(ctx context.Context, topic string, event Event) error {
 	e, err := json.Marshal(event)
 	if err != nil {
 		return err
 	}
 
-	stmt, err := m.getter.DefaultTrOrDB(ctx, m.db).PreparexContext(ctx, "INSERT INTO outbox (topic, payload) VALUES ($1, $2)")
+	stmt, err := m.getter.DefaultTrOrDB(ctx, m.db).PreparexContext(ctx, "INSERT INTO outbox (topic, kind, payload) VALUES ($1, $2, $3)")
 	if err != nil {
 		return err
 	}
@@ -65,7 +77,7 @@ func (m Manager) Publish(ctx context.Context, event Event) error {
 		}
 	}()
 
-	_, err = stmt.ExecContext(ctx, "test_topic", e)
+	_, err = stmt.ExecContext(ctx, topic, event.Kind(), e)
 	if err != nil {
 		return err
 	}
@@ -75,7 +87,6 @@ func (m Manager) Publish(ctx context.Context, event Event) error {
 
 func (m Manager) Start(ctx context.Context, lock *latch.CountDownLatch, options Options) {
 	lock.Add(1)
-	kafkaProducer := kafkaClient.NewProducer(m.logger, m.cfg.Kafka.Brokers)
 
 	go func() {
 		defer lock.Done()
@@ -86,32 +97,42 @@ func (m Manager) Start(ctx context.Context, lock *latch.CountDownLatch, options 
 			select {
 			case <-ticker.C:
 				m.logger.Debugf("Consume outbox events")
-				err := m.Consume(ctx, kafkaProducer)
+				err := m.Consume(ctx)
 				if err != nil {
 					m.logger.Errorf("failed to send outbox messages to broker, err: %w", err)
 				}
-				// Consume events and publish to kafka
+				// Consume events and publish to queue
 			case <-ctx.Done():
-				kafkaProducer.Close()
 				return
 			}
 		}
 	}()
 }
 
-func (m Manager) Consume(ctx context.Context, producer kafkaClient.Producer) error {
-	outboxes := []outbox{}
+func (m Manager) Consume(ctx context.Context) error {
+	var outboxes []outbox
 
 	tx, err := m.db.Beginx()
 	if err != nil {
 		return err
 	}
 	defer func() {
-		if err != nil {
-			rb := tx.Rollback()
-			if rb != nil {
-				err = rb
+		if panicErr := recover(); panicErr != nil {
+			rollbackErr := tx.Rollback()
+			if rollbackErr != nil {
+				err = fmt.Errorf("panic Error + rollback Error: %w", panicErr.(error))
+			} else {
+				err = fmt.Errorf("panic Error: %w", panicErr.(error))
 			}
+		}
+
+		if err != nil {
+			rollbackErr := tx.Rollback()
+			if rollbackErr != nil {
+				err = fmt.Errorf("rollback Error: %w", rollbackErr)
+			}
+		} else {
+			err = tx.Commit()
 		}
 	}()
 
@@ -120,10 +141,11 @@ func (m Manager) Consume(ctx context.Context, producer kafkaClient.Producer) err
 		return fmt.Errorf("failed get lock: %w", err)
 	}
 	if !locked {
+		m.logger.Warnf("can't aquire lock, err: %v", err)
 		return nil
 	}
 
-	// TODO: Now each tim ewe process only 50 messages
+	// TODO: Now each time we process only 50 messages
 	err = tx.SelectContext(
 		ctx,
 		&outboxes,
@@ -146,10 +168,10 @@ func (m Manager) Consume(ctx context.Context, producer kafkaClient.Producer) err
 
 	ids := make([]int64, len(outboxes))
 	for k, message := range outboxes {
-		err := producer.PublishMessage(ctx, kafka.Message{
-			Topic: message.Topic,
-			Value: message.Payload,
-			Time:  time.Now().UTC(),
+		err := m.publisher.Publish(ctx, Message{
+			Topic:   message.Topic,
+			Kind:    message.Kind,
+			Payload: message.Payload,
 		})
 		if err != nil {
 			continue
@@ -165,11 +187,6 @@ func (m Manager) Consume(ctx context.Context, producer kafkaClient.Producer) err
 	_, err = tx.ExecContext(ctx, query, args...)
 	if err != nil {
 		return fmt.Errorf("fail update consumed events state, err: %w", err)
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		return err
 	}
 
 	return nil

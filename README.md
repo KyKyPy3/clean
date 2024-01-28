@@ -6,3 +6,4 @@ TODO:
 - [ ] Add slog usage in zap logging
 - [ ] Add logger for tests
 - [ ] Migrate to testcontainers
+- [ ] Add https://github.com/AfterShip/email-verifier 

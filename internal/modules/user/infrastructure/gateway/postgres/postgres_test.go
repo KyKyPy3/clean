@@ -3,7 +3,6 @@ package postgres
 import (
 	"context"
 	"database/sql"
-	"github.com/KyKyPy3/clean/internal/infrastructure/config"
 	trmsqlx "github.com/avito-tech/go-transaction-manager/drivers/sqlx/v2"
 	"regexp"
 	"testing"
@@ -19,19 +18,22 @@ import (
 func TestFetch(t *testing.T) {
 	// Create logger
 	// TODO: add discard logger here
-	loggerCfg := &config.LoggerConfig{Mode: "test"}
-	logger := logger.NewLogger(loggerCfg)
-	logger.Init()
+	log := logger.NewLogger(logger.Config{
+		Mode: "test",
+	})
+	log.Init()
 
 	t.Run("Successfully retrieve users", func(t *testing.T) {
 		mockDB, mock, err := sqlmock.New()
 		if err != nil {
 			t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
 		}
-		defer mockDB.Close()
+		defer func() {
+			_ = mockDB.Close()
+		}()
 		sqlxDB := sqlx.NewDb(mockDB, "sqlmock")
 
-		repo := NewUserPgStorage(sqlxDB, trmsqlx.DefaultCtxGetter, logger)
+		repo := NewUserPgStorage(sqlxDB, trmsqlx.DefaultCtxGetter, log)
 
 		var limit int64 = 10
 		var offset int64 = 0
@@ -92,10 +94,12 @@ func TestFetch(t *testing.T) {
 		if err != nil {
 			t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
 		}
-		defer mockDB.Close()
+		defer func() {
+			_ = mockDB.Close()
+		}()
 		sqlxDB := sqlx.NewDb(mockDB, "sqlmock")
 
-		repo := NewUserPgStorage(sqlxDB, trmsqlx.DefaultCtxGetter, logger)
+		repo := NewUserPgStorage(sqlxDB, trmsqlx.DefaultCtxGetter, log)
 
 		var limit int64 = 10
 		var offset int64 = 0
@@ -131,10 +135,12 @@ func TestFetch(t *testing.T) {
 		if err != nil {
 			t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
 		}
-		defer mockDB.Close()
+		defer func() {
+			_ = mockDB.Close()
+		}()
 		sqlxDB := sqlx.NewDb(mockDB, "sqlmock")
 
-		repo := NewUserPgStorage(sqlxDB, trmsqlx.DefaultCtxGetter, logger)
+		repo := NewUserPgStorage(sqlxDB, trmsqlx.DefaultCtxGetter, log)
 
 		var limit int64 = 10
 		var offset int64 = 0
@@ -158,10 +164,12 @@ func TestFetch(t *testing.T) {
 		if err != nil {
 			t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
 		}
-		defer mockDB.Close()
+		defer func() {
+			_ = mockDB.Close()
+		}()
 		sqlxDB := sqlx.NewDb(mockDB, "sqlmock")
 
-		repo := NewUserPgStorage(sqlxDB, trmsqlx.DefaultCtxGetter, logger)
+		repo := NewUserPgStorage(sqlxDB, trmsqlx.DefaultCtxGetter, log)
 
 		mock.ExpectPrepare(regexp.QuoteMeta(fetchSQL)).
 			WillReturnError(sql.ErrConnDone)
@@ -180,10 +188,12 @@ func TestFetch(t *testing.T) {
 		if err != nil {
 			t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
 		}
-		defer mockDB.Close()
+		defer func() {
+			_ = mockDB.Close()
+		}()
 		sqlxDB := sqlx.NewDb(mockDB, "sqlmock")
 
-		repo := NewUserPgStorage(sqlxDB, trmsqlx.DefaultCtxGetter, logger)
+		repo := NewUserPgStorage(sqlxDB, trmsqlx.DefaultCtxGetter, log)
 
 		var limit int64 = 10
 		var offset int64 = 0

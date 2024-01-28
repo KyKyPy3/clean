@@ -17,18 +17,24 @@ type MailOptions struct {
 	body       string
 }
 
-type client struct {
+type Client struct {
 	logger logger.Logger
 }
 
-func New(logger logger.Logger) *client {
-	return &client{
+func New(logger logger.Logger) *Client {
+	return &Client{
 		logger: logger,
 	}
 }
 
-func (c *client) SendEmail(_ context.Context, options MailOptions) error {
-	c.logger.Debugf("Sending email with options: %+v", options)
+func (c *Client) SendEmail(_ context.Context, options MailOptions) error {
+	c.logger.Debugf(
+		"Sending email with options: sender: %s, recipients: %s, subject: %s, body: %s",
+		options.sender,
+		options.recipients,
+		options.subject,
+		options.body,
+	)
 
 	return nil
 }

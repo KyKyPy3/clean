@@ -1,12 +1,9 @@
 package common
 
 import (
+	"errors"
 	"regexp"
 	"strings"
-)
-
-import (
-	"errors"
 )
 
 var emailRe = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
@@ -55,6 +52,15 @@ func (e Email) validate() error {
 
 func (e Email) IsEmpty() bool {
 	return e == Email{}
+}
+
+func (e Email) MarshalText() (text []byte, err error) {
+	return []byte(e.email), nil
+}
+
+func (e Email) UnmarshalText(text []byte) error {
+	e.email = string(text)
+	return e.validate()
 }
 
 func (e Email) String() string {

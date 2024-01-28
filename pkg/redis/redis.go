@@ -3,10 +3,20 @@ package redis
 import (
 	"context"
 	"fmt"
-	"github.com/KyKyPy3/clean/internal/infrastructure/config"
-	"github.com/redis/go-redis/v9"
 	"time"
+
+	"github.com/redis/go-redis/v9"
 )
+
+type Config struct {
+	Host        string
+	Port        string
+	Password    string
+	DB          int
+	MinIdleConn int
+	PoolSize    int
+	PoolTimeout time.Duration
+}
 
 const (
 	maxRetries      = 5
@@ -17,7 +27,7 @@ const (
 	writeTimeout    = 3 * time.Second
 )
 
-func New(ctx context.Context, cfg *config.RedisConfig) (*redis.Client, error) {
+func New(ctx context.Context, cfg Config) (*redis.Client, error) {
 	client := redis.NewClient(&redis.Options{
 		Addr:            fmt.Sprintf("%s:%s", cfg.Host, cfg.Port),
 		MinIdleConns:    cfg.MinIdleConn,

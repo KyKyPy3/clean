@@ -2,22 +2,22 @@ package postgres_test
 
 import (
 	"fmt"
-	"github.com/KyKyPy3/clean/internal/infrastructure/config"
-	psql "github.com/KyKyPy3/clean/internal/modules/user/infrastructure/gateway/postgres"
-	trmsqlx "github.com/avito-tech/go-transaction-manager/drivers/sqlx/v2"
 	"log"
 	"os"
 	"testing"
 	"time"
 
-	"github.com/KyKyPy3/clean/internal/modules/user/domain/service"
-	"github.com/KyKyPy3/clean/pkg/logger"
+	trmsqlx "github.com/avito-tech/go-transaction-manager/drivers/sqlx/v2"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/jmoiron/sqlx"
 	"github.com/ory/dockertest/v3"
 	"github.com/ory/dockertest/v3/docker"
+
+	"github.com/KyKyPy3/clean/internal/modules/user/domain/service"
+	psql "github.com/KyKyPy3/clean/internal/modules/user/infrastructure/gateway/postgres"
+	"github.com/KyKyPy3/clean/pkg/logger"
 )
 
 const (
@@ -46,8 +46,9 @@ func TestMain(m *testing.M) {
 
 	// Create logger
 	// TODO: add discard logger here
-	loggerCfg := &config.LoggerConfig{Mode: "test"}
-	logger := logger.NewLogger(loggerCfg)
+	logger := logger.NewLogger(logger.Config{
+		Mode: "test",
+	})
 	logger.Init()
 
 	repo = psql.NewUserPgStorage(testDB, trmsqlx.DefaultCtxGetter, logger)

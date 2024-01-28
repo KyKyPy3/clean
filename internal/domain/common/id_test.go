@@ -1,6 +1,7 @@
 package common
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/google/uuid"
@@ -51,10 +52,9 @@ func TestEntityID_ParseEntityID(t *testing.T) {
 			// Create a new entity id
 			_, err := ParseUID(tc.id)
 			// Check if the error matches the expected error
-			if err != tc.expectedErr {
+			if !errors.Is(err, tc.expectedErr) {
 				t.Errorf("Expected error %v, got %v", tc.expectedErr, err)
 			}
-
 		})
 	}
 }

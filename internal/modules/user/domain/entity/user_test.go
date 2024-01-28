@@ -1,11 +1,11 @@
 package entity
 
 import (
+	"github.com/KyKyPy3/clean/internal/domain/core"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/KyKyPy3/clean/internal/domain"
 	"github.com/KyKyPy3/clean/internal/domain/common"
 	"github.com/KyKyPy3/clean/internal/modules/user/domain/value_object"
 )
@@ -38,5 +38,5 @@ func TestUserValidation(t *testing.T) {
 
 	_, err := NewUser(fullName, email, "12345")
 	assert.NotNil(t, err)
-	assert.ErrorIs(t, err, domain.ErrInvalidEntity)
+	assert.ErrorIs(t, err, core.ErrInvalidEntity)
 }

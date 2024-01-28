@@ -2,12 +2,13 @@ package metric
 
 import (
 	"context"
+	"time"
+
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
-	"time"
 )
 
 func New(ctx context.Context, service string) (func(context.Context) error, error) {

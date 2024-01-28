@@ -35,7 +35,11 @@ func main() {
 	}
 
 	// Init logger
-	appLogger := logger.NewLogger(&cfg.Logger)
+	appLogger := logger.NewLogger(logger.Config{
+		Mode:     cfg.Logger.Mode,
+		Level:    cfg.Logger.Level,
+		Encoding: cfg.Logger.Encoding,
+	})
 	appLogger.Init()
 	appLogger.Infof("Version: %s, LogLevel: %s, SSL: %v", cfg.Server.Version, cfg.Logger.Level, cfg.Server.SSL)
 

@@ -3,10 +3,10 @@ package postgres_test
 import (
 	"context"
 	"github.com/KyKyPy3/clean/internal/domain/common"
+	"github.com/KyKyPy3/clean/internal/domain/core"
 	"github.com/KyKyPy3/clean/internal/modules/user/domain/value_object"
 	"testing"
 
-	"github.com/KyKyPy3/clean/internal/domain"
 	"github.com/KyKyPy3/clean/internal/modules/user/domain/entity"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
@@ -39,7 +39,7 @@ func TestGetByID(t *testing.T) {
 
 	user, err = repo.GetByID(context.Background(), common.NewWithSpecifiedID(uuid.MustParse("2b0c1111-2136-46b6-bc38-b33038ca2e80")))
 	require.NotNil(t, err)
-	require.ErrorIs(t, err, domain.ErrNotFound)
+	require.ErrorIs(t, err, core.ErrNotFound)
 	require.Equal(t, entity.User{}, user)
 }
 
@@ -52,7 +52,7 @@ func TestGetByEmail(t *testing.T) {
 	bobEmail, _ := common.NewEmail("rob@email.com")
 	user, err = repo.GetByEmail(context.Background(), bobEmail)
 	require.NotNil(t, err)
-	require.ErrorIs(t, err, domain.ErrNotFound)
+	require.ErrorIs(t, err, core.ErrNotFound)
 	require.Equal(t, entity.User{}, user)
 }
 
