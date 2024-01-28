@@ -24,10 +24,7 @@ func RegistrationFromDB(dbRegistration DBRegistration) (entity.Registration, err
 		return entity.Registration{}, err
 	}
 
-	r, err := entity.Hydrate(entityID, email, dbRegistration.Verified)
-	if err != nil {
-		return r, err
-	}
+	r := entity.Hydrate(entityID, email, dbRegistration.Verified)
 
 	return r, nil
 }

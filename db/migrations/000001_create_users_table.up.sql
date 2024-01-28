@@ -4,6 +4,7 @@ CREATE TABLE users (
     surname      TEXT                      NOT NULL  CHECK ( surname <> '' ),
     middlename   TEXT                      NOT NULL  CHECK ( middlename <> '' ),
     email        VARCHAR(255)              NOT NULL  UNIQUE,
+    password     TEXT                      NOT NULL  CHECK ( middlename <> '' ),
     created_at   TIMESTAMP WITH TIME ZONE  NOT NULL  DEFAULT NOW(),
     updated_at   TIMESTAMP WITH TIME ZONE            DEFAULT CURRENT_TIMESTAMP
 );
@@ -13,5 +14,6 @@ COMMENT ON COLUMN users.name IS 'User first name';
 COMMENT ON COLUMN users.surname IS 'User last name';
 COMMENT ON COLUMN users.middlename IS 'User middle name';
 COMMENT ON COLUMN users.email IS 'User email';
+COMMENT ON COLUMN users.password IS 'User hashed password';
 COMMENT ON COLUMN users.created_at IS 'User created date';
 COMMENT ON COLUMN users.updated_at IS 'User modified date';

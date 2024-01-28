@@ -4,12 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"go.opentelemetry.io/otel"
 	"net/http"
 	"time"
 
 	"github.com/go-playground/validator"
 	"github.com/labstack/echo/v4"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 
 	http_dto "github.com/KyKyPy3/clean/internal/infrastructure/controller/http"

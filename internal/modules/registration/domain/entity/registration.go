@@ -35,9 +35,8 @@ func NewRegistration(ctx context.Context, email common.Email, uniqPolicy domain.
 		return Registration{}, core.ErrAlreadyExist
 	}
 
-	agregateRoot := core.BaseAggregateRoot{}
 	r := Registration{
-		BaseAggregateRoot: &agregateRoot,
+		BaseAggregateRoot: &core.BaseAggregateRoot{},
 		id:                common.NewUID(),
 		email:             email,
 		verified:          false,
@@ -48,20 +47,15 @@ func NewRegistration(ctx context.Context, email common.Email, uniqPolicy domain.
 	return r, nil
 }
 
-func Hydrate(id common.UID, email common.Email, verified bool) (Registration, error) {
-	if email.IsEmpty() {
-		return Registration{}, fmt.Errorf("registration email is empty, err: %w", core.ErrInvalidEntity)
-	}
-
-	agregateRoot := core.BaseAggregateRoot{}
+func Hydrate(id common.UID, email common.Email, verified bool) Registration {
 	reg := Registration{
-		BaseAggregateRoot: &agregateRoot,
+		BaseAggregateRoot: &core.BaseAggregateRoot{},
 		id:                id,
 		email:             email,
 		verified:          verified,
 	}
 
-	return reg, nil
+	return reg
 }
 
 func (r *Registration) IsEmpty() bool {
