@@ -15,7 +15,7 @@ import (
 	"github.com/ory/dockertest/v3"
 	"github.com/ory/dockertest/v3/docker"
 
-	"github.com/KyKyPy3/clean/internal/modules/user/domain/service"
+	"github.com/KyKyPy3/clean/internal/modules/user/application/ports"
 	psql "github.com/KyKyPy3/clean/internal/modules/user/infrastructure/gateway/postgres"
 	"github.com/KyKyPy3/clean/pkg/logger"
 )
@@ -29,7 +29,7 @@ const (
 
 var (
 	testDB   *sqlx.DB
-	repo     service.UserPgStorage
+	repo     ports.UserPgStorage
 	pool     *dockertest.Pool
 	resource *dockertest.Resource
 )

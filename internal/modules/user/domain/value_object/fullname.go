@@ -8,7 +8,6 @@ import (
 
 var (
 	ErrEmptyFirstName = errors.New("firstName cannot be empty")
-	ErrEmptyLastName  = errors.New("lastName cannot be empty")
 )
 
 // FullName is a value object representing first, last and middle names
@@ -27,10 +26,6 @@ func NewFullName(firstName, lastName, middleName string) (FullName, error) {
 
 	if fullName.firstName == "" {
 		return FullName{}, ErrEmptyFirstName
-	}
-
-	if fullName.lastName == "" {
-		return FullName{}, ErrEmptyLastName
 	}
 
 	return fullName, nil

@@ -2,6 +2,7 @@ package entity
 
 import (
 	"github.com/KyKyPy3/clean/internal/domain/core"
+	"golang.org/x/crypto/bcrypt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -16,16 +17,18 @@ func TestNewUser(t *testing.T) {
 
 	user, err := NewUser(fullName, email, "12345")
 	assert.Nil(t, err)
-	assert.Equal(t, user.GetFullName(), fullName)
-	assert.Equal(t, user.GetEmail(), email)
-	assert.NotEqual(t, user.GetPassword(), "12345")
+	assert.Equal(t, user.FullName(), fullName)
+	assert.Equal(t, user.Email(), email)
+	assert.Equal(t, user.Password(), "12345")
 }
 
 func TestPasswordValidation(t *testing.T) {
 	fullName := value_object.MustNewFullName("Alise", "Cooper", "Lee")
 	email := common.MustNewEmail("alise@email.com")
 
-	user, _ := NewUser(fullName, email, "12345")
+	hash, _ := bcrypt.GenerateFromPassword([]byte("12345"), 10)
+
+	user, _ := NewUser(fullName, email, string(hash))
 	err := user.ValidatePassword("12345")
 	assert.Nil(t, err)
 	err = user.ValidatePassword("password")

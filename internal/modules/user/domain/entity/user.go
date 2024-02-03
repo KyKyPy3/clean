@@ -2,19 +2,22 @@ package entity
 
 import (
 	"fmt"
-	"github.com/KyKyPy3/clean/internal/domain/core"
+	"github.com/KyKyPy3/clean/pkg/mediator"
 	"strings"
 	"time"
 
-	"github.com/KyKyPy3/clean/internal/domain/common"
-	"github.com/KyKyPy3/clean/internal/modules/user/domain/value_object"
 	"golang.org/x/crypto/bcrypt"
+
+	"github.com/KyKyPy3/clean/internal/domain/common"
+	"github.com/KyKyPy3/clean/internal/domain/core"
+	"github.com/KyKyPy3/clean/internal/modules/user/domain/value_object"
 )
 
 // User struct
 type User struct {
-	id common.UID
+	*core.BaseAggregateRoot
 
+	id        common.UID
 	fullName  value_object.FullName
 	email     common.Email
 	password  string
@@ -32,75 +35,84 @@ func NewUser(fullName value_object.FullName, email common.Email, password string
 		return User{}, fmt.Errorf("user email is empty, err: %w", core.ErrInvalidEntity)
 	}
 
+	// TODO: добавить проверку на уникальность email через policy
+
 	user := User{
-		fullName: fullName,
-		email:    email,
-		password: strings.TrimSpace(password),
-	}
-	user.SetID(common.NewUID())
-	if err := user.HashPassword(); err != nil {
-		return User{}, err
+		BaseAggregateRoot: &core.BaseAggregateRoot{},
+		id:                common.NewUID(),
+		fullName:          fullName,
+		email:             email,
+		password:          strings.TrimSpace(password),
 	}
 
 	return user, nil
 }
 
-func (u *User) GetID() common.UID {
-	return u.id
+func Hadrate(
+	id common.UID,
+	fullName value_object.FullName,
+	email common.Email,
+	password string,
+	createdAt time.Time,
+	updatedAt time.Time,
+) User {
+	user := User{
+		BaseAggregateRoot: &core.BaseAggregateRoot{},
+		id:                id,
+		fullName:          fullName,
+		email:             email,
+		password:          password,
+		createdAt:         createdAt,
+		updatedAt:         updatedAt,
+	}
+
+	return user
 }
 
-func (u *User) SetID(id common.UID) {
-	u.id = id
+func (u *User) ID() common.UID {
+	return u.id
 }
 
 func (u *User) IsEmpty() bool {
 	return *u == User{}
 }
 
-// GetFullName returns the fullname of the user.
-func (u *User) GetFullName() value_object.FullName {
+// FullName returns the fullname of the user.
+func (u *User) FullName() value_object.FullName {
 	return u.fullName
 }
 
-// SetFullName set the fullname of the user.
-func (u *User) SetFullName(fullName value_object.FullName) {
+// UpdateFullName set the fullname of the user.
+func (u *User) UpdateFullName(fullName value_object.FullName) {
 	u.fullName = fullName
 }
 
-// GetEmail returns the email of the user.
-func (u *User) GetEmail() common.Email {
+// Email returns the email of the user.
+func (u *User) Email() common.Email {
 	return u.email
 }
 
-// SetEmail set the email of the user.
-func (u *User) SetEmail(email common.Email) {
+// UpdateEmail set the email of the user.
+func (u *User) UpdateEmail(email common.Email) {
 	u.email = email
 }
 
-// GetPassword returns the password of the user.
-func (u *User) GetPassword() string {
+// Password returns the password of the user.
+func (u *User) Password() string {
 	return u.password
 }
 
-// SetPassword set the password of the user.
-func (u *User) SetPassword(password string) {
+// UpdatePassword set the password of the user.
+func (u *User) UpdatePassword(password string) {
 	u.password = password
 }
 
-func (u *User) GetCreatedAt() time.Time {
+func (u *User) CreatedAt() time.Time {
 	return u.createdAt
 }
 
-func (u *User) SetCreatedAt(createdAt time.Time) {
-	u.createdAt = createdAt
-}
-
-func (u *User) GetUpdatedAt() time.Time {
+func (u *User) UpdatedAt() time.Time {
 	return u.updatedAt
-}
-
-func (u *User) SetUpdatedAt(updatedAt time.Time) {
-	u.updatedAt = updatedAt
 }
 
 // ValidatePassword compare provided password with stored
@@ -112,24 +124,16 @@ func (u *User) ValidatePassword(password string) error {
 	return nil
 }
 
-// HashPassword hash user password
-func (u *User) HashPassword() error {
-	hash, err := bcrypt.GenerateFromPassword([]byte(u.password), 10)
-	if err != nil {
-		return err
-	}
-
-	u.password = string(hash)
-
-	return nil
-}
-
 // String returns the string representation of the user.
 func (u *User) String() string {
 	return fmt.Sprintf(
 		"User{ID: %s, FullName: %s, Email: %s}",
-		u.GetID(),
-		u.GetFullName().String(),
-		u.GetEmail().String(),
+		u.ID(),
+		u.FullName().String(),
+		u.Email().String(),
 	)
+}
+
+func (u *User) Events() []mediator.Event {
+	return u.BaseAggregateRoot.Events()
 }

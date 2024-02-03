@@ -15,45 +15,41 @@ type DbUser struct {
 	Surname    string    `db:"surname"`
 	Middlename string    `db:"middlename"`
 	Email      string    `db:"email"`
+	Password   string    `db:"password"`
 	CreatedAt  time.Time `db:"created_at"`
 	UpdatedAt  time.Time `db:"updated_at"`
 }
 
 // UserFromDB Convert database user model to domain model
 func UserFromDB(dbUser DbUser) (entity.User, error) {
-	u := entity.User{}
-
 	entityID, err := common.ParseUID(dbUser.ID)
 	if err != nil {
-		return u, err
+		return entity.User{}, err
 	}
 
 	email, err := common.NewEmail(dbUser.Email)
 	if err != nil {
-		return u, err
+		return entity.User{}, err
 	}
 
 	fullName, err := value_object.NewFullName(dbUser.Name, dbUser.Surname, dbUser.Middlename)
 	if err != nil {
-		return u, err
+		return entity.User{}, err
 	}
 
-	u.SetID(entityID)
-	u.SetFullName(fullName)
-	u.SetEmail(email)
-	u.SetCreatedAt(dbUser.CreatedAt)
-	u.SetUpdatedAt(dbUser.CreatedAt)
+	user := entity.Hadrate(entityID, fullName, email, dbUser.Password, dbUser.CreatedAt, dbUser.UpdatedAt)
 
-	return u, nil
+	return user, nil
 }
 
 // UserToDB Convert domain user model to database model
 func UserToDB(user entity.User) DbUser {
 	return DbUser{
-		ID:         user.GetID().String(),
-		Name:       user.GetFullName().FirstName(),
-		Surname:    user.GetFullName().LastName(),
-		Middlename: user.GetFullName().MiddleName(),
-		Email:      user.GetEmail().String(),
+		ID:         user.ID().String(),
+		Name:       user.FullName().FirstName(),
+		Surname:    user.FullName().LastName(),
+		Middlename: user.FullName().MiddleName(),
+		Email:      user.Email().String(),
+		Password:   user.Password(),
 	}
 }

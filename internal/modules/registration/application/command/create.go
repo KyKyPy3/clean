@@ -2,40 +2,48 @@ package command
 
 import (
 	"context"
-
-	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
+	"fmt"
 
 	"github.com/KyKyPy3/clean/internal/application/core"
 	"github.com/KyKyPy3/clean/internal/domain/common"
 	"github.com/KyKyPy3/clean/internal/modules/registration/application/ports"
 	"github.com/KyKyPy3/clean/internal/modules/registration/domain/entity"
 	"github.com/KyKyPy3/clean/pkg/logger"
-	"github.com/KyKyPy3/clean/pkg/mediator"
 )
 
+const CreateRegistrationKind = "CreateRegistration"
+
 type CreateRegistrationCommand struct {
-	Email string
+	Email    string
+	Password string
 }
 
-type CreateRegistrationHandler core.CommandHandler[CreateRegistrationCommand]
-
-type UniquenessPolicy interface {
-	IsUnique(ctx context.Context, email common.Email) (bool, error)
+func NewCreateRegistrationCommand(email string, password string) CreateRegistrationCommand {
+	return CreateRegistrationCommand{
+		Email:    email,
+		Password: password,
+	}
 }
+
+func (c CreateRegistrationCommand) Type() core.CommandType {
+	return CreateRegistrationKind
+}
+
+var _ core.Command = (*CreateRegistrationCommand)(nil)
 
 type CreateRegistration struct {
 	storage  ports.RegistrationPgStorage
-	policy   UniquenessPolicy
-	manager  *manager.Manager
-	mediator *mediator.Mediator
+	policy   ports.UniquenessPolicer
+	manager  ports.TrManager
+	mediator ports.Mediator
 	logger   logger.Logger
 }
 
 func NewCreateRegistration(
 	storage ports.RegistrationPgStorage,
-	policy UniquenessPolicy,
-	manager *manager.Manager,
-	mediator *mediator.Mediator,
+	policy ports.UniquenessPolicer,
+	manager ports.TrManager,
+	mediator ports.Mediator,
 	logger logger.Logger,
 ) CreateRegistration {
 	return CreateRegistration{
@@ -47,13 +55,18 @@ func NewCreateRegistration(
 	}
 }
 
-func (c CreateRegistration) Handle(ctx context.Context, command CreateRegistrationCommand) error {
-	email, err := common.NewEmail(command.Email)
+func (c CreateRegistration) Handle(ctx context.Context, command core.Command) error {
+	createCommand, ok := command.(CreateRegistrationCommand)
+	if !ok {
+		return fmt.Errorf("command type %s: %w", command.Type(), core.ErrUnexpectedCommand)
+	}
+
+	email, err := common.NewEmail(createCommand.Email)
 	if err != nil {
 		return err
 	}
 
-	reg, err := entity.NewRegistration(ctx, email, c.policy)
+	reg, err := entity.NewRegistration(ctx, email, createCommand.Password, c.policy)
 	if err != nil {
 		return err
 	}
@@ -77,3 +90,5 @@ func (c CreateRegistration) Handle(ctx context.Context, command CreateRegistrati
 
 	return nil
 }
+
+var _ core.CommandHandler = (*CreateRegistration)(nil)

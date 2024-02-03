@@ -82,15 +82,17 @@ func TestFetchHandler(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			// Create user usecase mock
-			userUsecaseMock := mocks.NewUserUsecase(t)
+			// Create user command bus mock
+			userCommandBusMock := mocks.NewCommandBus(t)
+			userQueryBusMock := mocks.NewQueryBus(t)
 
 			handler := v1.UserHandlers{
-				UserService: userUsecaseMock,
-				Logger:      log,
+				Commands: userCommandBusMock,
+				Queries:  userQueryBusMock,
+				Logger:   log,
 			}
 
-			userUsecaseMock.On("Fetch", mock.Anything, mock.Anything, mock.Anything).Return(tc.mockResp, tc.mockError).Once()
+			userQueryBusMock.On("Ask", mock.Anything, mock.Anything).Return(tc.mockResp, tc.mockError).Once()
 
 			req, err := http.NewRequestWithContext(
 				context.TODO(),
@@ -114,7 +116,7 @@ func TestFetchHandler(t *testing.T) {
 			assert.Equal(t, tc.respMessage, d.Message)
 			assert.Equal(t, tc.respError, d.Error)
 
-			userUsecaseMock.AssertExpectations(t)
+			userQueryBusMock.AssertExpectations(t)
 		})
 	}
 }

@@ -7,8 +7,8 @@ import (
 	"go.opentelemetry.io/otel"
 
 	"github.com/KyKyPy3/clean/internal/domain/common"
+	"github.com/KyKyPy3/clean/internal/modules/user/application/ports"
 	"github.com/KyKyPy3/clean/internal/modules/user/domain/entity"
-	"github.com/KyKyPy3/clean/internal/modules/user/domain/service"
 	"github.com/KyKyPy3/clean/pkg/logger"
 )
 
@@ -17,7 +17,7 @@ type userRedisStorage struct {
 	logger logger.Logger
 }
 
-func NewUserRedisStorage(db *redis.Client, logger logger.Logger) service.UserRedisStorage {
+func NewUserRedisStorage(db *redis.Client, logger logger.Logger) ports.UserRedisStorage {
 	return &userRedisStorage{db: db, logger: logger}
 }
 

@@ -2,12 +2,12 @@ package postgres_test
 
 import (
 	"context"
-	"github.com/KyKyPy3/clean/internal/domain/common"
-	"github.com/KyKyPy3/clean/internal/domain/core"
-	"github.com/KyKyPy3/clean/internal/modules/user/domain/value_object"
 	"testing"
 
+	"github.com/KyKyPy3/clean/internal/domain/common"
+	"github.com/KyKyPy3/clean/internal/domain/core"
 	"github.com/KyKyPy3/clean/internal/modules/user/domain/entity"
+	"github.com/KyKyPy3/clean/internal/modules/user/domain/value_object"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
@@ -21,15 +21,12 @@ func TestFetch(t *testing.T) {
 func TestCreate(t *testing.T) {
 	fullName, _ := value_object.NewFullName("Bob", "Smith", "Joseph")
 	email, _ := common.NewEmail("bob@email.com")
-	user := entity.User{}
-	user.SetID(common.NewUID())
-	user.SetFullName(fullName)
-	user.SetEmail(email)
-	user.SetPassword("12345")
 
-	user, err := repo.Create(context.Background(), user)
+	user, _ := entity.NewUser(fullName, email, "12345")
+
+	err := repo.Create(context.Background(), user)
 	require.NoError(t, err)
-	require.NotNil(t, user.GetID())
+	require.NotNil(t, user.ID())
 }
 
 func TestGetByID(t *testing.T) {

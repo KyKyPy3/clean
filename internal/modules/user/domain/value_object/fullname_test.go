@@ -27,7 +27,7 @@ func TestFullName_NewFullName(t *testing.T) {
 			firstName:   "John",
 			lastName:    "",
 			middleName:  "Sr",
-			expectedErr: ErrEmptyLastName,
+			expectedErr: nil,
 		}, {
 			test:        "Valid fullanme",
 			firstName:   "John",

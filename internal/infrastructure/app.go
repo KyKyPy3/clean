@@ -11,29 +11,21 @@ import (
 	"github.com/segmentio/kafka-go"
 
 	"github.com/KyKyPy3/clean/internal/infrastructure/config"
-	"github.com/KyKyPy3/clean/internal/modules/registration/application"
-	"github.com/KyKyPy3/clean/internal/modules/registration/domain/event"
-	registrationHandlers "github.com/KyKyPy3/clean/internal/modules/registration/infrastructure/controller/http/v1"
-	registrationPg "github.com/KyKyPy3/clean/internal/modules/registration/infrastructure/gateway/postgres"
-	"github.com/KyKyPy3/clean/internal/modules/registration/infrastructure/gateway/queue"
-	userUsecase "github.com/KyKyPy3/clean/internal/modules/user/application/usecase"
-	userService "github.com/KyKyPy3/clean/internal/modules/user/domain/service"
-	userHandlers "github.com/KyKyPy3/clean/internal/modules/user/infrastructure/controller/http/v1"
-	userPg "github.com/KyKyPy3/clean/internal/modules/user/infrastructure/gateway/postgres"
-	userRedis "github.com/KyKyPy3/clean/internal/modules/user/infrastructure/gateway/redis"
+	"github.com/KyKyPy3/clean/internal/infrastructure/queue"
+	"github.com/KyKyPy3/clean/internal/modules/registration"
+	email_gateway "github.com/KyKyPy3/clean/internal/modules/registration/infrastructure/gateway/email"
+	queueGateway "github.com/KyKyPy3/clean/internal/modules/registration/infrastructure/gateway/queue"
+	"github.com/KyKyPy3/clean/internal/modules/user"
+	"github.com/KyKyPy3/clean/pkg/email"
 	kafkaClient "github.com/KyKyPy3/clean/pkg/kafka"
 	"github.com/KyKyPy3/clean/pkg/latch"
 	"github.com/KyKyPy3/clean/pkg/logger"
 	"github.com/KyKyPy3/clean/pkg/mediator"
 	"github.com/KyKyPy3/clean/pkg/metric"
 	"github.com/KyKyPy3/clean/pkg/outbox"
-	postgresClient "github.com/KyKyPy3/clean/pkg/postgres"
+	"github.com/KyKyPy3/clean/pkg/postgres"
 	redisClient "github.com/KyKyPy3/clean/pkg/redis"
 	"github.com/KyKyPy3/clean/pkg/tracing"
-)
-
-const (
-	queueTopic = "registration"
 )
 
 type App struct {
@@ -42,7 +34,7 @@ type App struct {
 	redisClient *redis.Client
 	kafkaClient *kafka.Conn
 	web         *Web
-	consumer    *Consumer
+	consumer    *queue.Consumer
 	lock        *latch.CountDownLatch
 	logger      logger.Logger
 }
@@ -54,7 +46,7 @@ func NewApp(
 	lock *latch.CountDownLatch,
 ) *App {
 	// Init pg client
-	pgClient, err := postgresClient.New(ctx, postgresClient.Config{
+	pgClient, err := postgres.New(ctx, postgres.Config{
 		Host:         cfg.Postgres.Host,
 		Port:         cfg.Postgres.Port,
 		User:         cfg.Postgres.User,
@@ -103,7 +95,7 @@ func NewApp(
 	}
 
 	web := NewWeb(cfg, logger, lock)
-	consumer := NewConsumer(cfg, lock, logger)
+	consumer := queue.NewConsumer(cfg, lock, logger)
 
 	return &App{
 		cfg:         cfg,
@@ -121,6 +113,7 @@ func (a *App) Shutdown() {
 	_ = a.pgClient.Close()
 	_ = a.redisClient.Close()
 	_ = a.kafkaClient.Close()
+	_ = a.consumer.Stop()
 	_ = a.web.Shutdown()
 }
 
@@ -178,12 +171,12 @@ func (a *App) Run(ctx context.Context) error {
 		return err
 	}
 
+	a.connectHandlers(ctx, kafkaProducer)
+
 	err = a.consumer.Start(ctx)
 	if err != nil {
 		return err
 	}
-
-	a.connectHandlers(ctx, kafkaProducer)
 
 	return nil
 }
@@ -195,40 +188,20 @@ func (a *App) connectHandlers(ctx context.Context, producer kafkaClient.Producer
 	// Init core systems
 	pubsub := mediator.New(a.logger)
 	trManager := manager.Must(trmsqlx.NewDefaultFactory(a.pgClient))
-	queue := queue.NewQueue(producer)
+	queue := queueGateway.NewQueue(producer)
 	outboxMngr := outbox.New(a.cfg, a.pgClient, queue, trmsqlx.DefaultCtxGetter, a.logger)
 	outboxMngr.Start(ctx, a.lock, outbox.Options{Heartbeat: time.Second * 15})
-
-	// Init user layers
 	apiMountPoint := a.web.mountPoint().Group("/api/v1")
+	emailClient := email.New(a.logger)
+	emailGateway := email_gateway.New(emailClient, a.logger)
 
-	userPgStorage := userPg.NewUserPgStorage(a.pgClient, trmsqlx.DefaultCtxGetter, a.logger)
-	userRedisStorage := userRedis.NewUserRedisStorage(a.redisClient, a.logger)
-	userSrv := userService.NewUserService(userPgStorage, userRedisStorage, a.logger)
-	userUsecase := userUsecase.NewUserUsecase(userSrv, trManager, a.logger)
+	////////////////////////////////
+	// Init user layout
+	////////////////////////////////
+	user.InitUserHandlers(a.pgClient, apiMountPoint, pubsub, trManager, a.logger)
 
-	userHandlers.NewUserHandlers(apiMountPoint, userUsecase, a.logger)
-
+	////////////////////////////////
 	// Init registration layout
-	regPgStorage := registrationPg.NewRegistrationPgStorage(a.pgClient, trmsqlx.DefaultCtxGetter, a.logger)
-	regUniqPolicy := application.NewUniquenessPolicy(userPgStorage, a.logger)
-	regApplication := application.NewApplication(regPgStorage, regUniqPolicy, trManager, pubsub, a.logger)
-	pubsub.Subscribe(event.RegistrationCreated, func(ctx context.Context, e mediator.Event) error {
-		a.logger.Debugf("Receive domain event %v", e)
-
-		err := outboxMngr.Publish(ctx, queueTopic, e)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	})
-
-	pubsub.Subscribe(event.RegistrationVerified, func(ctx context.Context, e mediator.Event) error {
-		a.logger.Debugf("Receive domain event %v", e)
-
-		return nil
-	})
-
-	registrationHandlers.NewRegistrationHandlers(apiMountPoint, regApplication, a.logger)
+	////////////////////////////////
+	registration.InitUserHandlers(a.pgClient, apiMountPoint, pubsub, a.consumer, trManager, emailGateway, outboxMngr, a.logger)
 }

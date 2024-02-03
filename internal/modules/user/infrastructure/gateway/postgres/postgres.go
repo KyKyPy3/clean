@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/KyKyPy3/clean/internal/domain/core"
+	"github.com/KyKyPy3/clean/internal/modules/user/application/ports"
 
 	trmsqlx "github.com/avito-tech/go-transaction-manager/drivers/sqlx/v2"
 	"github.com/jmoiron/sqlx"
@@ -13,7 +14,6 @@ import (
 
 	"github.com/KyKyPy3/clean/internal/domain/common"
 	"github.com/KyKyPy3/clean/internal/modules/user/domain/entity"
-	"github.com/KyKyPy3/clean/internal/modules/user/domain/service"
 	"github.com/KyKyPy3/clean/pkg/logger"
 )
 
@@ -24,7 +24,7 @@ type userPgStorage struct {
 	getter *trmsqlx.CtxGetter
 }
 
-func NewUserPgStorage(db *sqlx.DB, getter *trmsqlx.CtxGetter, logger logger.Logger) service.UserPgStorage {
+func NewUserPgStorage(db *sqlx.DB, getter *trmsqlx.CtxGetter, logger logger.Logger) ports.UserPgStorage {
 	return &userPgStorage{
 		db:     db,
 		logger: logger,
@@ -85,13 +85,13 @@ func (u *userPgStorage) Fetch(ctx context.Context, limit, offset int64) ([]entit
 }
 
 // Create new user
-func (u *userPgStorage) Create(ctx context.Context, d entity.User) (entity.User, error) {
+func (u *userPgStorage) Create(ctx context.Context, d entity.User) error {
 	ctx, span := u.tracer.Start(ctx, "userPgStorage.Create")
 	defer span.End()
 
 	stmt, err := u.getter.DefaultTrOrDB(ctx, u.db).PreparexContext(ctx, createSQL)
 	if err != nil {
-		return entity.User{}, errors.Wrap(err, "Create.PreparexContext")
+		return errors.Wrap(err, "Create.PreparexContext")
 	}
 	defer func() {
 		err := stmt.Close()
@@ -108,16 +108,16 @@ func (u *userPgStorage) Create(ctx context.Context, d entity.User) (entity.User,
 		user.Surname,
 		user.Middlename,
 		user.Email,
+		user.Password,
 	).StructScan(&user); err != nil {
-		return entity.User{}, errors.Wrap(err, "Create.QueryRowxContext")
+		return errors.Wrap(err, "Create.QueryRowxContext")
 	}
 
-	userEntity, err := UserFromDB(user)
-	if err != nil {
-		return entity.User{}, errors.Wrap(err, "Create.UserFromDB")
-	}
+	return nil
+}
 
-	return userEntity, nil
+func (u *userPgStorage) Update(ctx context.Context, d entity.User) error {
+	return nil
 }
 
 // GetByID Get user by id

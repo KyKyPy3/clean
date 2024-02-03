@@ -4,41 +4,52 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/KyKyPy3/clean/internal/modules/user/application/query"
+	"github.com/KyKyPy3/clean/internal/modules/user/domain/entity"
 	"net/http"
 	"time"
 
 	"github.com/go-playground/validator"
 	"github.com/labstack/echo/v4"
 
-	"github.com/KyKyPy3/clean/internal/domain/common"
+	"github.com/KyKyPy3/clean/internal/application/core"
 	common_http "github.com/KyKyPy3/clean/internal/infrastructure/controller/http"
-	"github.com/KyKyPy3/clean/internal/modules/user/domain/entity"
+	"github.com/KyKyPy3/clean/internal/modules/user/application/command"
 	"github.com/KyKyPy3/clean/internal/modules/user/infrastructure/controller/http/dto"
 	"github.com/KyKyPy3/clean/pkg/logger"
 )
 
-type UserUsecase interface {
-	Fetch(ctx context.Context, limit, offset int64) ([]entity.User, error)
-	Create(ctx context.Context, user entity.User) (entity.User, error)
-	GetByID(ctx context.Context, id common.UID) (entity.User, error)
-	GetByEmail(ctx context.Context, email common.Email) (entity.User, error)
-	Delete(ctx context.Context, id common.UID) error
+type CommandBus interface {
+	Dispatch(context.Context, core.Command) error
+}
+
+type QueryBus interface {
+	Ask(context.Context, core.Query) (any, error)
 }
 
 type UserHandlers struct {
-	UserService UserUsecase
-	Logger      logger.Logger
+	Commands CommandBus
+	Queries  QueryBus
+	Logger   logger.Logger
 }
 
-func NewUserHandlers(v1 *echo.Group, userService UserUsecase, logger logger.Logger) {
-	handlers := &UserHandlers{UserService: userService, Logger: logger}
+func NewUserHandlers(v1 *echo.Group, commands CommandBus, queries QueryBus, logger logger.Logger) {
+	handlers := &UserHandlers{Commands: commands, Queries: queries, Logger: logger}
 
 	v1.GET("/user", handlers.Fetch)
-	v1.POST("/user", handlers.Create)
+	v1.POST("/user/:id", handlers.Update)
 	v1.GET("/user/:id", handlers.GetByID)
 	v1.DELETE("/user/:id", handlers.Delete)
 }
 
+// Fetch godoc
+// @Summary Fetch users
+// @Description Fetch users handler
+// @Tags User
+// @Accept json
+// @Produce json
+// @Success 201 {object} entity.User
+// @Router /user [get]
 func (h *UserHandlers) Fetch(c echo.Context) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -99,7 +110,11 @@ func (h *UserHandlers) Fetch(c echo.Context) error {
 		)
 	}
 
-	users, err := h.UserService.Fetch(ctx, opts.Limit, opts.Offset)
+	q := query.FetchUsersQuery{
+		Offset: opts.Offset,
+		Limit:  opts.Limit,
+	}
+	users, err := h.Queries.Ask(ctx, q)
 	if err != nil {
 		return c.JSON(
 			http.StatusInternalServerError,
@@ -113,7 +128,7 @@ func (h *UserHandlers) Fetch(c echo.Context) error {
 
 	respUsers := make([]dto.UserDTO, 0)
 
-	for _, user := range users {
+	for _, user := range users.([]entity.User) {
 		respUsers = append(respUsers, dto.UserToResponse(user))
 	}
 
@@ -129,20 +144,20 @@ func (h *UserHandlers) Fetch(c echo.Context) error {
 	)
 }
 
-// Create godoc
-// @Summary Create user
-// @Description Create user handler
+// Update godoc
+// @Summary Update user
+// @Description Update user handler
 // @Tags User
 // @Accept json
 // @Produce json
-// @Success 201 {object} entity.User
-// @Router /user [post]
-func (h *UserHandlers) Create(c echo.Context) error {
+// @Success 200 {object} entity.User
+// @Router /user/{id} [post]
+func (h *UserHandlers) Update(c echo.Context) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	var errorList []*common_http.ValidationError
-	params := dto.CreateUserDTO{}
+	params := dto.UpdateUserDTO{}
 
 	// Parse given params
 	err := c.Bind(&params)
@@ -185,23 +200,18 @@ func (h *UserHandlers) Create(c echo.Context) error {
 		)
 	}
 
-	user, err := dto.UserFromRequest(params)
-	if err != nil {
-		return c.JSON(
-			http.StatusBadRequest,
-			common_http.ResponseDTO{
-				Status:  http.StatusBadRequest,
-				Message: "error",
-				Errors:  errorList,
-			},
-		)
+	h.Logger.Debugf("Update user with params %v", params)
+
+	cmd := command.UpdateUserCommand{
+		Name:       params.Name,
+		Surname:    params.Surname,
+		Middlename: params.Middlename,
+		Email:      params.Email,
 	}
 
-	h.Logger.Debugf("Create user with params %v", user)
-
-	user, err = h.UserService.Create(ctx, user)
+	err = h.Commands.Dispatch(ctx, cmd)
 	if err != nil {
-		h.Logger.Errorf("Failed to create user %w", err)
+		h.Logger.Errorf("Failed to update user %w", err)
 
 		return c.JSON(
 			http.StatusInternalServerError,
@@ -216,11 +226,8 @@ func (h *UserHandlers) Create(c echo.Context) error {
 	return c.JSON(
 		http.StatusOK,
 		common_http.ResponseDTO{
-			Status:  http.StatusCreated,
+			Status:  http.StatusOK,
 			Message: "success",
-			Data: map[string]interface{}{
-				"user": dto.UserToResponse(user),
-			},
 		},
 	)
 }

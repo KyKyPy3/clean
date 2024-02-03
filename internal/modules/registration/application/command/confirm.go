@@ -3,7 +3,7 @@ package command
 import (
 	"context"
 	"errors"
-	"github.com/KyKyPy3/clean/pkg/mediator"
+	"fmt"
 
 	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
 
@@ -12,13 +12,20 @@ import (
 	domain_core "github.com/KyKyPy3/clean/internal/domain/core"
 	"github.com/KyKyPy3/clean/internal/modules/registration/application/ports"
 	"github.com/KyKyPy3/clean/pkg/logger"
+	"github.com/KyKyPy3/clean/pkg/mediator"
 )
+
+const ConfirmRegistrationKind = "ConfirmRegistration"
 
 type ConfirmRegistrationCommand struct {
 	ID string
 }
 
-type ConfirmRegistrationHandler core.CommandHandler[ConfirmRegistrationCommand]
+func (c ConfirmRegistrationCommand) Type() core.CommandType {
+	return ConfirmRegistrationKind
+}
+
+var _ core.Command = (*ConfirmRegistrationCommand)(nil)
 
 type ConfirmRegistration struct {
 	manager  *manager.Manager
@@ -27,7 +34,12 @@ type ConfirmRegistration struct {
 	logger   logger.Logger
 }
 
-func NewConfirmRegistration(storage ports.RegistrationPgStorage, mediator *mediator.Mediator, manager *manager.Manager, logger logger.Logger) ConfirmRegistration {
+func NewConfirmRegistration(
+	storage ports.RegistrationPgStorage,
+	mediator *mediator.Mediator,
+	manager *manager.Manager,
+	logger logger.Logger,
+) ConfirmRegistration {
 	return ConfirmRegistration{
 		storage:  storage,
 		manager:  manager,
@@ -36,8 +48,13 @@ func NewConfirmRegistration(storage ports.RegistrationPgStorage, mediator *media
 	}
 }
 
-func (c ConfirmRegistration) Handle(ctx context.Context, command ConfirmRegistrationCommand) error {
-	id, err := common.ParseUID(command.ID)
+func (c ConfirmRegistration) Handle(ctx context.Context, command core.Command) error {
+	confirmCommand, ok := command.(ConfirmRegistrationCommand)
+	if !ok {
+		return fmt.Errorf("command type %s: %w", command.Type(), core.ErrUnexpectedCommand)
+	}
+
+	id, err := common.ParseUID(confirmCommand.ID)
 	if err != nil {
 		return err
 	}
@@ -75,3 +92,5 @@ func (c ConfirmRegistration) Handle(ctx context.Context, command ConfirmRegistra
 
 	return nil
 }
+
+var _ core.CommandHandler = (*ConfirmRegistration)(nil)

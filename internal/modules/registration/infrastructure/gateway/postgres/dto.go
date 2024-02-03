@@ -9,6 +9,7 @@ import (
 type DBRegistration struct {
 	ID       string `db:"id"`
 	Email    string `db:"email"`
+	Password string `db:"password"`
 	Verified bool   `db:"verified"`
 }
 
@@ -24,7 +25,7 @@ func RegistrationFromDB(dbRegistration DBRegistration) (entity.Registration, err
 		return entity.Registration{}, err
 	}
 
-	r := entity.Hydrate(entityID, email, dbRegistration.Verified)
+	r := entity.Hydrate(entityID, email, dbRegistration.Password, dbRegistration.Verified)
 
 	return r, nil
 }
@@ -34,6 +35,7 @@ func RegistrationToDB(registration entity.Registration) DBRegistration {
 	return DBRegistration{
 		ID:       registration.ID().String(),
 		Email:    registration.Email().String(),
+		Password: registration.Password(),
 		Verified: registration.Verified(),
 	}
 }

@@ -55,6 +55,7 @@ func (r *registrationPgStorage) Create(ctx context.Context, d entity.Registratio
 		ctx,
 		registration.ID,
 		registration.Email,
+		registration.Password,
 	); err != nil {
 		return errors.Wrap(err, "[registrationPgStorage.Create] QueryRowxContext")
 	}

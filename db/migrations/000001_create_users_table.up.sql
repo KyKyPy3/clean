@@ -1,10 +1,10 @@
 CREATE TABLE users (
     id           VARCHAR(36) PRIMARY KEY,
     name         TEXT                      NOT NULL  CHECK ( name <> '' ),
-    surname      TEXT                      NOT NULL  CHECK ( surname <> '' ),
-    middlename   TEXT                      NOT NULL  CHECK ( middlename <> '' ),
+    surname      TEXT,
+    middlename   TEXT,
     email        VARCHAR(255)              NOT NULL  UNIQUE,
-    password     TEXT                      NOT NULL  CHECK ( middlename <> '' ),
+    password     TEXT                      NOT NULL  CHECK ( password <> '' ),
     created_at   TIMESTAMP WITH TIME ZONE  NOT NULL  DEFAULT NOW(),
     updated_at   TIMESTAMP WITH TIME ZONE            DEFAULT CURRENT_TIMESTAMP
 );

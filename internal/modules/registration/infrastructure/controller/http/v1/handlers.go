@@ -12,28 +12,28 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 
+	"github.com/KyKyPy3/clean/internal/application/core"
 	http_dto "github.com/KyKyPy3/clean/internal/infrastructure/controller/http"
-	"github.com/KyKyPy3/clean/internal/modules/registration/application"
 	"github.com/KyKyPy3/clean/internal/modules/registration/application/command"
 	"github.com/KyKyPy3/clean/internal/modules/registration/infrastructure/controller/http/dto"
 	"github.com/KyKyPy3/clean/pkg/logger"
 )
 
-type RegistrationApp interface {
-	Create(ctx context.Context, email string) error
+type CommandBus interface {
+	Dispatch(context.Context, core.Command) error
 }
 
 type RegistrationHandlers struct {
-	registrationApp *application.Application
-	logger          logger.Logger
-	tracer          trace.Tracer
+	commands CommandBus
+	logger   logger.Logger
+	tracer   trace.Tracer
 }
 
-func NewRegistrationHandlers(v1 *echo.Group, registrationApp *application.Application, logger logger.Logger) {
+func NewRegistrationHandlers(v1 *echo.Group, commands CommandBus, logger logger.Logger) {
 	handlers := &RegistrationHandlers{
-		registrationApp: registrationApp,
-		logger:          logger,
-		tracer:          otel.Tracer(""),
+		commands: commands,
+		logger:   logger,
+		tracer:   otel.Tracer(""),
 	}
 
 	v1.POST("/registration", handlers.Create)
@@ -48,6 +48,7 @@ func NewRegistrationHandlers(v1 *echo.Group, registrationApp *application.Applic
 // @Produce json
 // @Success 201
 // @Router /registration [post]
+// @BasePath /v1
 func (r *RegistrationHandlers) Create(c echo.Context) error {
 	ctx, cancel := context.WithTimeout(c.Request().Context(), 10*time.Second)
 	defer cancel()
@@ -101,10 +102,8 @@ func (r *RegistrationHandlers) Create(c echo.Context) error {
 
 	r.logger.Debugf("Create registration with params %v", params)
 
-	cmd := command.CreateRegistrationCommand{
-		Email: params.Email,
-	}
-	err = r.registrationApp.Commands.CreateRegistration.Handle(ctx, cmd)
+	cmd := command.NewCreateRegistrationCommand(params.Email, params.Password)
+	err = r.commands.Dispatch(ctx, cmd)
 	if err != nil {
 		r.logger.Errorf("Failed to create registration %w", err)
 
@@ -149,7 +148,7 @@ func (r *RegistrationHandlers) Confirm(c echo.Context) error {
 	cmd := command.ConfirmRegistrationCommand{
 		ID: id,
 	}
-	err := r.registrationApp.Commands.ConfirmRegistration.Handle(ctx, cmd)
+	err := r.commands.Dispatch(ctx, cmd)
 	if err != nil {
 		r.logger.Errorf("Failed to confirm registration %w", err)
 

@@ -76,13 +76,13 @@ func TestFetch(t *testing.T) {
 
 		assert.Len(t, users, 1)
 
-		assert.Equal(t, users[0].GetID().String(), userID)
-		assert.Equal(t, users[0].GetFullName().FirstName(), name)
-		assert.Equal(t, users[0].GetFullName().LastName(), surname)
-		assert.Equal(t, users[0].GetFullName().MiddleName(), middlename)
-		assert.Equal(t, users[0].GetEmail().String(), email)
-		assert.WithinDuration(t, users[0].GetCreatedAt(), createdAt, 10*time.Millisecond)
-		assert.WithinDuration(t, users[0].GetUpdatedAt(), updatedAt, 10*time.Millisecond)
+		assert.Equal(t, users[0].ID().String(), userID)
+		assert.Equal(t, users[0].FullName().FirstName(), name)
+		assert.Equal(t, users[0].FullName().LastName(), surname)
+		assert.Equal(t, users[0].FullName().MiddleName(), middlename)
+		assert.Equal(t, users[0].Email().String(), email)
+		assert.WithinDuration(t, users[0].CreatedAt(), createdAt, 10*time.Millisecond)
+		assert.WithinDuration(t, users[0].UpdatedAt(), updatedAt, 10*time.Millisecond)
 
 		// ensure that all expectations are met in the mock
 		errExpectations := mock.ExpectationsWereMet()
