@@ -19,8 +19,10 @@ import (
 	"github.com/KyKyPy3/clean/pkg/logger"
 )
 
+const requestTimeout = 10 * time.Second
+
 type CommandBus interface {
-	Dispatch(context.Context, core.Command) error
+	Dispatch(context.Context, core.Command) (any, error)
 }
 
 type QueryBus interface {
@@ -51,7 +53,7 @@ func NewUserHandlers(v1 *echo.Group, commands CommandBus, queries QueryBus, logg
 // @Success 201 {object} entity.User
 // @Router /user [get]
 func (h *UserHandlers) Fetch(c echo.Context) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
 	defer cancel()
 
 	var errorList []*common_http.ValidationError
@@ -153,7 +155,7 @@ func (h *UserHandlers) Fetch(c echo.Context) error {
 // @Success 200 {object} entity.User
 // @Router /user/{id} [post]
 func (h *UserHandlers) Update(c echo.Context) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
 	defer cancel()
 
 	var errorList []*common_http.ValidationError
@@ -209,7 +211,7 @@ func (h *UserHandlers) Update(c echo.Context) error {
 		Email:      params.Email,
 	}
 
-	err = h.Commands.Dispatch(ctx, cmd)
+	_, err = h.Commands.Dispatch(ctx, cmd)
 	if err != nil {
 		h.Logger.Errorf("Failed to update user %w", err)
 

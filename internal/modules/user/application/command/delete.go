@@ -48,15 +48,15 @@ func NewDeleteUser(
 	}
 }
 
-func (c DeleteUser) Handle(ctx context.Context, command core.Command) error {
+func (c DeleteUser) Handle(ctx context.Context, command core.Command) (any, error) {
 	deleteCommand, ok := command.(DeleteUserCommand)
 	if !ok {
-		return fmt.Errorf("command type %s: %w", command.Type(), core.ErrUnexpectedCommand)
+		return nil, fmt.Errorf("command type %s: %w", command.Type(), core.ErrUnexpectedCommand)
 	}
 
 	id, err := common.ParseUID(deleteCommand.ID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	err = c.manager.Do(ctx, func(ctx context.Context) error {
@@ -77,10 +77,10 @@ func (c DeleteUser) Handle(ctx context.Context, command core.Command) error {
 		return nil
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return nil, nil
 }
 
 var _ core.CommandHandler = (*DeleteUser)(nil)

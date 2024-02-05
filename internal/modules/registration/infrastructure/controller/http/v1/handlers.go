@@ -20,7 +20,7 @@ import (
 )
 
 type CommandBus interface {
-	Dispatch(context.Context, core.Command) error
+	Dispatch(context.Context, core.Command) (any, error)
 }
 
 type RegistrationHandlers struct {
@@ -103,7 +103,7 @@ func (r *RegistrationHandlers) Create(c echo.Context) error {
 	r.logger.Debugf("Create registration with params %v", params)
 
 	cmd := command.NewCreateRegistrationCommand(params.Email, params.Password)
-	err = r.commands.Dispatch(ctx, cmd)
+	_, err = r.commands.Dispatch(ctx, cmd)
 	if err != nil {
 		r.logger.Errorf("Failed to create registration %w", err)
 
@@ -148,7 +148,7 @@ func (r *RegistrationHandlers) Confirm(c echo.Context) error {
 	cmd := command.ConfirmRegistrationCommand{
 		ID: id,
 	}
-	err := r.commands.Dispatch(ctx, cmd)
+	_, err := r.commands.Dispatch(ctx, cmd)
 	if err != nil {
 		r.logger.Errorf("Failed to confirm registration %w", err)
 

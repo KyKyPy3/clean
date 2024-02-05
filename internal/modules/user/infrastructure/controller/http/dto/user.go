@@ -4,11 +4,18 @@ import (
 	"github.com/KyKyPy3/clean/internal/modules/user/domain/entity"
 )
 
+type LoginDTO struct {
+	Email    string `json:"email" validate:"required"`
+	Password string `json:"password" validate:"required"`
+}
+
 type UserDTO struct {
 	Name       string `json:"name"`
 	Surname    string `json:"surname"`
 	Middlename string `json:"middlename"`
 	Email      string `json:"email"`
+	CreatedAt  string `json:"createdAt"`
+	UpdatedAt  string `json:"updateAt"`
 }
 
 type FetchUsersDTO struct {
@@ -30,5 +37,7 @@ func UserToResponse(user entity.User) UserDTO {
 		Surname:    user.FullName().LastName(),
 		Middlename: user.FullName().MiddleName(),
 		Email:      user.Email().String(),
+		CreatedAt:  user.CreatedAt().String(),
+		UpdatedAt:  user.UpdatedAt().String(),
 	}
 }

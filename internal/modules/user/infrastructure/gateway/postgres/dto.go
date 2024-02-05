@@ -37,7 +37,7 @@ func UserFromDB(dbUser DbUser) (entity.User, error) {
 		return entity.User{}, err
 	}
 
-	user := entity.Hadrate(entityID, fullName, email, dbUser.Password, dbUser.CreatedAt, dbUser.UpdatedAt)
+	user := entity.Hydrate(entityID, fullName, email, dbUser.Password, dbUser.CreatedAt, dbUser.UpdatedAt)
 
 	return user, nil
 }

@@ -3,9 +3,7 @@ package registration
 import (
 	"context"
 
-	trmsqlx "github.com/avito-tech/go-transaction-manager/drivers/sqlx/v2"
 	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
-	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo/v4"
 
 	"github.com/KyKyPy3/clean/internal/application/core"
@@ -13,13 +11,12 @@ import (
 	"github.com/KyKyPy3/clean/internal/modules/registration/application"
 	"github.com/KyKyPy3/clean/internal/modules/registration/application/command"
 	reg_event "github.com/KyKyPy3/clean/internal/modules/registration/application/event"
+	"github.com/KyKyPy3/clean/internal/modules/registration/application/ports"
 	"github.com/KyKyPy3/clean/internal/modules/registration/domain/event"
 	handlers "github.com/KyKyPy3/clean/internal/modules/registration/infrastructure/controller/http/v1"
 	events "github.com/KyKyPy3/clean/internal/modules/registration/infrastructure/controller/queue/v1"
 	"github.com/KyKyPy3/clean/internal/modules/registration/infrastructure/gateway/email"
-	registrationPg "github.com/KyKyPy3/clean/internal/modules/registration/infrastructure/gateway/postgres"
 	user_event "github.com/KyKyPy3/clean/internal/modules/user/application/event"
-	userPg "github.com/KyKyPy3/clean/internal/modules/user/infrastructure/gateway/postgres"
 	"github.com/KyKyPy3/clean/pkg/logger"
 	"github.com/KyKyPy3/clean/pkg/mediator"
 	"github.com/KyKyPy3/clean/pkg/outbox"
@@ -29,8 +26,9 @@ const (
 	queueTopic = "registration"
 )
 
-func InitUserHandlers(
-	pgClient *sqlx.DB,
+func InitHandlers(
+	userViewStorage ports.UserPgStorage,
+	regPgStorage ports.RegistrationPgStorage,
 	mountPoint *echo.Group,
 	pubsub *mediator.Mediator,
 	consumer *queue.Consumer,
@@ -39,9 +37,7 @@ func InitUserHandlers(
 	outboxManager outbox.Manager,
 	logger logger.Logger,
 ) {
-	userPgStorage := userPg.NewUserPgStorage(pgClient, trmsqlx.DefaultCtxGetter, logger)
-	regPgStorage := registrationPg.NewRegistrationPgStorage(pgClient, trmsqlx.DefaultCtxGetter, logger)
-	regUniqPolicy := application.NewUniquenessPolicy(userPgStorage, logger)
+	regUniqPolicy := application.NewUniquenessPolicy(userViewStorage, logger)
 	regCmdBus := core.NewCommandBus()
 	regCmdBus.Register(
 		command.CreateRegistrationKind,
@@ -67,7 +63,7 @@ func InitUserHandlers(
 		return nil
 	})
 
-	pubsub.Subscribe(event.RegistrationVerified, user_event.NewRegistrationVerified(logger, userPgStorage).Handle)
+	pubsub.Subscribe(event.RegistrationVerified, user_event.NewRegistrationVerified(logger, userViewStorage).Handle)
 
 	handlers.NewRegistrationHandlers(mountPoint, regCmdBus, logger)
 	events.NewRegistrationEvents(consumer, regCmdBus, logger)

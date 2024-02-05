@@ -2,6 +2,7 @@ package infrastructure
 
 import (
 	"context"
+	"github.com/KyKyPy3/clean/internal/modules/session/infrastructure/controller/middleware"
 	"time"
 
 	trmsqlx "github.com/avito-tech/go-transaction-manager/drivers/sqlx/v2"
@@ -14,9 +15,14 @@ import (
 	"github.com/KyKyPy3/clean/internal/infrastructure/queue"
 	"github.com/KyKyPy3/clean/internal/modules/registration"
 	email_gateway "github.com/KyKyPy3/clean/internal/modules/registration/infrastructure/gateway/email"
+	reg_postgres "github.com/KyKyPy3/clean/internal/modules/registration/infrastructure/gateway/postgres"
 	queueGateway "github.com/KyKyPy3/clean/internal/modules/registration/infrastructure/gateway/queue"
+	"github.com/KyKyPy3/clean/internal/modules/session"
+	session_redis "github.com/KyKyPy3/clean/internal/modules/session/infrastructure/gateway/redis"
 	"github.com/KyKyPy3/clean/internal/modules/user"
+	user_postgres "github.com/KyKyPy3/clean/internal/modules/user/infrastructure/gateway/postgres"
 	"github.com/KyKyPy3/clean/pkg/email"
+	"github.com/KyKyPy3/clean/pkg/jwt"
 	kafkaClient "github.com/KyKyPy3/clean/pkg/kafka"
 	"github.com/KyKyPy3/clean/pkg/latch"
 	"github.com/KyKyPy3/clean/pkg/logger"
@@ -34,6 +40,7 @@ type App struct {
 	redisClient *redis.Client
 	kafkaClient *kafka.Conn
 	web         *Web
+	jwt         *jwt.JWT
 	consumer    *queue.Consumer
 	lock        *latch.CountDownLatch
 	logger      logger.Logger
@@ -94,7 +101,12 @@ func NewApp(
 		logger.Info("Kafka connected to brokers %+v", brokers)
 	}
 
-	web := NewWeb(cfg, logger, lock)
+	jwt, err := jwt.NewJWT(cfg.Certs.PrivateKey, cfg.Certs.PublicKey)
+	if err != nil {
+		logger.Fatalf("Can't parse certs: %s", err)
+	}
+
+	web := NewWeb(cfg, jwt, logger, lock)
 	consumer := queue.NewConsumer(cfg, lock, logger)
 
 	return &App{
@@ -103,6 +115,7 @@ func NewApp(
 		lock:        lock,
 		pgClient:    pgClient,
 		kafkaClient: kfClient,
+		jwt:         jwt,
 		redisClient: rdClient,
 		web:         web,
 		consumer:    consumer,
@@ -182,8 +195,10 @@ func (a *App) Run(ctx context.Context) error {
 }
 
 func (a *App) connectHandlers(ctx context.Context, producer kafkaClient.Producer) {
+	mountPoint := a.web.mountPoint()
+
 	// Health endpoint
-	NewHealthHandlers(a.web.mountPoint(), a.logger, a)
+	NewHealthHandlers(mountPoint, a.logger, a)
 
 	// Init core systems
 	pubsub := mediator.New(a.logger)
@@ -191,17 +206,39 @@ func (a *App) connectHandlers(ctx context.Context, producer kafkaClient.Producer
 	queue := queueGateway.NewQueue(producer)
 	outboxMngr := outbox.New(a.cfg, a.pgClient, queue, trmsqlx.DefaultCtxGetter, a.logger)
 	outboxMngr.Start(ctx, a.lock, outbox.Options{Heartbeat: time.Second * 15})
-	apiMountPoint := a.web.mountPoint().Group("/api/v1")
 	emailClient := email.New(a.logger)
 	emailGateway := email_gateway.New(emailClient, a.logger)
+
+	userPgStorage := user_postgres.NewUserPgStorage(a.pgClient, trmsqlx.DefaultCtxGetter, a.logger)
+	regPgStorage := reg_postgres.NewRegistrationPgStorage(a.pgClient, trmsqlx.DefaultCtxGetter, a.logger)
+	sessionStorage := session_redis.NewSessionRedisStorage(a.redisClient, a.logger)
+
+	authMiddleware := middleware.NewAuthMiddleware(a.jwt, sessionStorage, a.logger)
+	publicMountPoint := mountPoint.Group("/api/v1")
+	privateMountPoint := mountPoint.Group("/api/v1", authMiddleware.Process)
 
 	////////////////////////////////
 	// Init user layout
 	////////////////////////////////
-	user.InitUserHandlers(a.pgClient, apiMountPoint, pubsub, trManager, a.logger)
+	user.InitHandlers(userPgStorage, privateMountPoint, pubsub, trManager, a.logger)
+
+	////////////////////////////////
+	// Init session layout
+	////////////////////////////////
+	session.InitHandlers(userPgStorage, sessionStorage, publicMountPoint, privateMountPoint, a.cfg, a.jwt, a.logger)
 
 	////////////////////////////////
 	// Init registration layout
 	////////////////////////////////
-	registration.InitUserHandlers(a.pgClient, apiMountPoint, pubsub, a.consumer, trManager, emailGateway, outboxMngr, a.logger)
+	registration.InitHandlers(
+		userPgStorage,
+		regPgStorage,
+		publicMountPoint,
+		pubsub,
+		a.consumer,
+		trManager,
+		emailGateway,
+		outboxMngr,
+		a.logger,
+	)
 }

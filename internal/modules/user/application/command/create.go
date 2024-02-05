@@ -54,25 +54,25 @@ func NewCreateUser(
 	}
 }
 
-func (c CreateUser) Handle(ctx context.Context, command core.Command) error {
+func (c CreateUser) Handle(ctx context.Context, command core.Command) (any, error) {
 	createCommand, ok := command.(CreateUserCommand)
 	if !ok {
-		return fmt.Errorf("command type %s: %w", command.Type(), core.ErrUnexpectedCommand)
+		return nil, fmt.Errorf("command type %s: %w", command.Type(), core.ErrUnexpectedCommand)
 	}
 
 	fullname, err := value_object.NewFullName(createCommand.Name, createCommand.Surname, createCommand.Middlename)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	email, err := common.NewEmail(createCommand.Email)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	user, err := entity.NewUser(fullname, email, createCommand.Password)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	err = c.manager.Do(ctx, func(ctx context.Context) error {
@@ -98,10 +98,10 @@ func (c CreateUser) Handle(ctx context.Context, command core.Command) error {
 		return nil
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return nil, nil
 }
 
 var _ core.CommandHandler = (*CreateUser)(nil)

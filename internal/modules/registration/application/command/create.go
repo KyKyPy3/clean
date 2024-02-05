@@ -55,20 +55,20 @@ func NewCreateRegistration(
 	}
 }
 
-func (c CreateRegistration) Handle(ctx context.Context, command core.Command) error {
+func (c CreateRegistration) Handle(ctx context.Context, command core.Command) (any, error) {
 	createCommand, ok := command.(CreateRegistrationCommand)
 	if !ok {
-		return fmt.Errorf("command type %s: %w", command.Type(), core.ErrUnexpectedCommand)
+		return nil, fmt.Errorf("command type %s: %w", command.Type(), core.ErrUnexpectedCommand)
 	}
 
 	email, err := common.NewEmail(createCommand.Email)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	reg, err := entity.NewRegistration(ctx, email, createCommand.Password, c.policy)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	err = c.manager.Do(ctx, func(ctx context.Context) error {
@@ -85,10 +85,10 @@ func (c CreateRegistration) Handle(ctx context.Context, command core.Command) er
 		return nil
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return nil, nil
 }
 
 var _ core.CommandHandler = (*CreateRegistration)(nil)

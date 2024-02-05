@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho"
 
 	"github.com/KyKyPy3/clean/internal/infrastructure/config"
+	"github.com/KyKyPy3/clean/pkg/jwt"
 	"github.com/KyKyPy3/clean/pkg/latch"
 	"github.com/KyKyPy3/clean/pkg/logger"
 )
@@ -39,7 +40,7 @@ type Web struct {
 	lock   *latch.CountDownLatch
 }
 
-func NewWeb(cfg *config.Config, logger logger.Logger, lock *latch.CountDownLatch) *Web {
+func NewWeb(cfg *config.Config, jwt *jwt.JWT, logger logger.Logger, lock *latch.CountDownLatch) *Web {
 	return &Web{
 		logger: logger,
 		cfg:    cfg,

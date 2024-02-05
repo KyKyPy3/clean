@@ -10,6 +10,8 @@ import (
 
 type Config struct {
 	Server   ServerConfig
+	Certs    CertsConfig
+	Jwt      JwtConfig
 	Logger   LoggerConfig
 	Postgres PostgresConfig
 	Redis    RedisConfig
@@ -24,6 +26,16 @@ type ServerConfig struct {
 	ReadTimeout  time.Duration
 	WriteTimeout time.Duration
 	Name         string
+}
+
+type CertsConfig struct {
+	PrivateKey string
+	PublicKey  string
+}
+
+type JwtConfig struct {
+	AccessTokenMaxAge  time.Duration
+	RefreshTokenMaxAge time.Duration
 }
 
 type LoggerConfig struct {

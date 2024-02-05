@@ -15,7 +15,7 @@ import (
 )
 
 type CommandBus interface {
-	Dispatch(context.Context, core.Command) error
+	Dispatch(context.Context, core.Command) (any, error)
 }
 
 type RegistrationEvents struct {
@@ -51,7 +51,7 @@ func (r *RegistrationEvents) Handle(ctx context.Context, event *kafka.Message) e
 		ID:    "1",
 		Email: email,
 	}
-	err = r.commands.Dispatch(ctx, cmd)
+	_, err = r.commands.Dispatch(ctx, cmd)
 	if err != nil {
 		r.logger.Errorf("Can't execute send email command, err: %v", err)
 	}

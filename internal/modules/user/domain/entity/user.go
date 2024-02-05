@@ -48,7 +48,7 @@ func NewUser(fullName value_object.FullName, email common.Email, password string
 	return user, nil
 }
 
-func Hadrate(
+func Hydrate(
 	id common.UID,
 	fullName value_object.FullName,
 	email common.Email,

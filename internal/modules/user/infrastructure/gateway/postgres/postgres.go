@@ -117,6 +117,32 @@ func (u *userPgStorage) Create(ctx context.Context, d entity.User) error {
 }
 
 func (u *userPgStorage) Update(ctx context.Context, d entity.User) error {
+	ctx, span := u.tracer.Start(ctx, "userPgStorage.Update")
+	defer span.End()
+
+	stmt, err := u.getter.DefaultTrOrDB(ctx, u.db).PreparexContext(ctx, updateSQL)
+	if err != nil {
+		return errors.Wrap(err, "Update.PreparexContext")
+	}
+	defer func() {
+		err := stmt.Close()
+		if err != nil {
+			u.logger.Errorf("can't close create statement, err: %w", err)
+		}
+	}()
+
+	user := UserToDB(d)
+	if err := stmt.QueryRowxContext(
+		ctx,
+		user.ID,
+		user.Name,
+		user.Surname,
+		user.Middlename,
+		user.Email,
+	).StructScan(&user); err != nil {
+		return errors.Wrap(err, "Update.QueryRowxContext")
+	}
+
 	return nil
 }
 

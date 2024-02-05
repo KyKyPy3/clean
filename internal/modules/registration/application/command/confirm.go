@@ -48,15 +48,15 @@ func NewConfirmRegistration(
 	}
 }
 
-func (c ConfirmRegistration) Handle(ctx context.Context, command core.Command) error {
+func (c ConfirmRegistration) Handle(ctx context.Context, command core.Command) (any, error) {
 	confirmCommand, ok := command.(ConfirmRegistrationCommand)
 	if !ok {
-		return fmt.Errorf("command type %s: %w", command.Type(), core.ErrUnexpectedCommand)
+		return nil, fmt.Errorf("command type %s: %w", command.Type(), core.ErrUnexpectedCommand)
 	}
 
 	id, err := common.ParseUID(confirmCommand.ID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	err = c.manager.Do(ctx, func(ctx context.Context) error {
@@ -87,10 +87,10 @@ func (c ConfirmRegistration) Handle(ctx context.Context, command core.Command) e
 		return nil
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return nil, nil
 }
 
 var _ core.CommandHandler = (*ConfirmRegistration)(nil)

@@ -35,11 +35,11 @@ func NewSendEmail(logger logger.Logger, sender ports.EmailSender) *SendEmail {
 	}
 }
 
-func (s *SendEmail) Handle(ctx context.Context, command core.Command) error {
+func (s *SendEmail) Handle(ctx context.Context, command core.Command) (any, error) {
 	sendCommand, ok := command.(SendEmailCommand)
 	if !ok {
-		return fmt.Errorf("command type %s: %w", command.Type(), core.ErrUnexpectedCommand)
+		return nil, fmt.Errorf("command type %s: %w", command.Type(), core.ErrUnexpectedCommand)
 	}
 
-	return s.sender.Send(ctx, sendCommand.Email, "Registration email", "Test body")
+	return nil, s.sender.Send(ctx, sendCommand.Email, "Registration email", "Test body")
 }

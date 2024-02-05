@@ -47,6 +47,8 @@ func (r RegistrationVerified) handleEmailVerified(ctx context.Context, e event.R
 		return err
 	}
 
+	r.logger.Debugf("Create user %+v", user)
+
 	err = r.storage.Create(ctx, user)
 	if err != nil {
 		return err

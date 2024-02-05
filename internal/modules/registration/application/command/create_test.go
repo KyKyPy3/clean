@@ -33,7 +33,7 @@ func TestHandleUnsupportedCreateRegistrationCommandError(t *testing.T) {
 	mediatorMock := ports.NewMediator(t)
 
 	createRegistrationCommandHandler := NewCreateRegistration(registrationStorageMock, policyMock, managerMock, mediatorMock, log)
-	err := createRegistrationCommandHandler.Handle(context.Background(), unsupportedCommand)
+	_, err := createRegistrationCommandHandler.Handle(context.Background(), unsupportedCommand)
 
 	registrationStorageMock.AssertExpectations(t)
 	assert.ErrorIs(t, err, core.ErrUnexpectedCommand)
@@ -57,7 +57,7 @@ func TestHandleUnsupportedCreateRegistrationEmailError(t *testing.T) {
 	mediatorMock := ports.NewMediator(t)
 
 	createRegistrationCommandHandler := NewCreateRegistration(registrationStorageMock, policyMock, managerMock, mediatorMock, log)
-	err := createRegistrationCommandHandler.Handle(context.Background(), createRegistrationCommand)
+	_, err := createRegistrationCommandHandler.Handle(context.Background(), createRegistrationCommand)
 
 	registrationStorageMock.AssertExpectations(t)
 	assert.ErrorIs(t, err, common.ErrBadFormat)
@@ -83,7 +83,7 @@ func TestHandleUnsupportedCreateRegistrationNotUniqError(t *testing.T) {
 	policyMock.On("IsUnique", mock.Anything, mock.Anything).Return(false, nil)
 
 	createRegistrationCommandHandler := NewCreateRegistration(registrationStorageMock, policyMock, managerMock, mediatorMock, log)
-	err := createRegistrationCommandHandler.Handle(context.Background(), createRegistrationCommand)
+	_, err := createRegistrationCommandHandler.Handle(context.Background(), createRegistrationCommand)
 
 	registrationStorageMock.AssertExpectations(t)
 	assert.ErrorIs(t, err, domain_core.ErrAlreadyExist)
@@ -114,7 +114,7 @@ func TestHandleCreateRegistrationCommandSuccess(t *testing.T) {
 	registrationStorageMock.On("Create", mock.Anything, mock.Anything).Return(nil)
 
 	createRegistrationCommandHandler := NewCreateRegistration(registrationStorageMock, policyMock, managerMock, mediatorMock, log)
-	err := createRegistrationCommandHandler.Handle(context.Background(), createRegistrationCommand)
+	_, err := createRegistrationCommandHandler.Handle(context.Background(), createRegistrationCommand)
 
 	registrationStorageMock.AssertExpectations(t)
 	assert.NoError(t, err)

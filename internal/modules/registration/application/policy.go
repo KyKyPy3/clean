@@ -11,11 +11,11 @@ import (
 )
 
 type UniquenessPolicy struct {
-	pgStorage ports.UserViewPgStorage
+	pgStorage ports.UserPgStorage
 	logger    logger.Logger
 }
 
-func NewUniquenessPolicy(pgStorage ports.UserViewPgStorage, logger logger.Logger) UniquenessPolicy {
+func NewUniquenessPolicy(pgStorage ports.UserPgStorage, logger logger.Logger) UniquenessPolicy {
 	return UniquenessPolicy{
 		pgStorage: pgStorage,
 		logger:    logger,

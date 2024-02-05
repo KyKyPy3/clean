@@ -53,25 +53,25 @@ func NewUpdateUser(
 	}
 }
 
-func (c UpdateUser) Handle(ctx context.Context, command core.Command) error {
+func (c UpdateUser) Handle(ctx context.Context, command core.Command) (any, error) {
 	updateCommand, ok := command.(UpdateUserCommand)
 	if !ok {
-		return fmt.Errorf("command type %s: %w", command.Type(), core.ErrUnexpectedCommand)
+		return nil, fmt.Errorf("command type %s: %w", command.Type(), core.ErrUnexpectedCommand)
 	}
 
 	id, err := common.ParseUID(updateCommand.ID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	fullname, err := value_object.NewFullName(updateCommand.Name, updateCommand.Surname, updateCommand.Middlename)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	email, err := common.NewEmail(updateCommand.Email)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	err = c.manager.Do(ctx, func(ctx context.Context) error {
@@ -100,10 +100,10 @@ func (c UpdateUser) Handle(ctx context.Context, command core.Command) error {
 		return nil
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return nil, nil
 }
 
 var _ core.CommandHandler = (*UpdateUser)(nil)

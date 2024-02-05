@@ -24,7 +24,7 @@ type Command interface {
 
 // CommandHandler represents the interface for a command handler.
 type CommandHandler interface {
-	Handle(context.Context, Command) error
+	Handle(context.Context, Command) (any, error)
 }
 
 // CommandBus represents the command bus.
@@ -40,10 +40,10 @@ func NewCommandBus() *CommandBus {
 }
 
 // Dispatch sends a command for processing.
-func (c CommandBus) Dispatch(ctx context.Context, command Command) error {
+func (c CommandBus) Dispatch(ctx context.Context, command Command) (any, error) {
 	handler, ok := c.handlers[command.Type()]
 	if !ok {
-		return fmt.Errorf("%s: %w", command.Type(), ErrCommandHandlerNotFound)
+		return nil, fmt.Errorf("%s: %w", command.Type(), ErrCommandHandlerNotFound)
 	}
 
 	return handler.Handle(ctx, command)

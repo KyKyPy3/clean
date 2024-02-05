@@ -2,26 +2,47 @@ package service_test
 
 import (
 	"net/http"
-	"net/url"
 	"testing"
 
 	"github.com/gavv/httpexpect/v2"
 )
 
 const (
-	host = "localhost:8080"
+	baseUrl = "http://localhost:8080"
 )
 
 func TestClear_SuccessPath(t *testing.T) {
-	u := url.URL{
-		Scheme: "http",
-		Host:   host,
-	}
-	e := httpexpect.Default(t, u.String())
+	e := httpexpect.WithConfig(httpexpect.Config{
+		BaseURL:  baseUrl,
+		Reporter: httpexpect.NewRequireReporter(t),
+		Printers: []httpexpect.Printer{
+			httpexpect.NewCurlPrinter(t),
+			httpexpect.NewDebugPrinter(t, true),
+		},
+	})
 
-	obj := e.GET("/api/v1/user").
+	e.GET("/api/v1/user").
+		Expect().
+		Status(http.StatusUnauthorized)
+
+	type Login struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+
+	res := e.POST("/api/v1/auth/login").
+		WithJSON(Login{"ivan@email.com", "123"}).
 		Expect().
 		Status(http.StatusOK).JSON().Object()
 
-	_ = obj
+	res.Path("$.data").Object().Keys().ContainsOnly("access_token")
+
+	token := res.Path("$.data").Object().Value("access_token").String().Raw()
+
+	res = e.GET("/api/v1/user").
+		WithHeader("Authorization", "Bearer "+token).
+		Expect().
+		Status(http.StatusOK).JSON().Object()
+
+	_ = res
 }

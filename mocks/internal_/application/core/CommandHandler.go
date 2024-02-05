@@ -23,21 +23,33 @@ func (_m *CommandHandler) EXPECT() *CommandHandler_Expecter {
 }
 
 // Handle provides a mock function with given fields: _a0, _a1
-func (_m *CommandHandler) Handle(_a0 context.Context, _a1 core.Command) error {
+func (_m *CommandHandler) Handle(_a0 context.Context, _a1 core.Command) (interface{}, error) {
 	ret := _m.Called(_a0, _a1)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Handle")
 	}
 
-	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, core.Command) error); ok {
+	var r0 interface{}
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, core.Command) (interface{}, error)); ok {
+		return rf(_a0, _a1)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, core.Command) interface{}); ok {
 		r0 = rf(_a0, _a1)
 	} else {
-		r0 = ret.Error(0)
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(interface{})
+		}
 	}
 
-	return r0
+	if rf, ok := ret.Get(1).(func(context.Context, core.Command) error); ok {
+		r1 = rf(_a0, _a1)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // CommandHandler_Handle_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Handle'
@@ -59,12 +71,12 @@ func (_c *CommandHandler_Handle_Call) Run(run func(_a0 context.Context, _a1 core
 	return _c
 }
 
-func (_c *CommandHandler_Handle_Call) Return(_a0 error) *CommandHandler_Handle_Call {
-	_c.Call.Return(_a0)
+func (_c *CommandHandler_Handle_Call) Return(_a0 interface{}, _a1 error) *CommandHandler_Handle_Call {
+	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *CommandHandler_Handle_Call) RunAndReturn(run func(context.Context, core.Command) error) *CommandHandler_Handle_Call {
+func (_c *CommandHandler_Handle_Call) RunAndReturn(run func(context.Context, core.Command) (interface{}, error)) *CommandHandler_Handle_Call {
 	_c.Call.Return(run)
 	return _c
 }
