@@ -66,7 +66,7 @@ func (c CreateRegistration) Handle(ctx context.Context, command core.Command) (a
 		return nil, err
 	}
 
-	reg, err := entity.NewRegistration(ctx, email, createCommand.Password, c.policy)
+	reg, err := entity.NewRegistration(email, createCommand.Password, c.policy)
 	if err != nil {
 		return nil, err
 	}

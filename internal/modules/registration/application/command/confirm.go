@@ -5,14 +5,11 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
-
 	"github.com/KyKyPy3/clean/internal/application/core"
 	"github.com/KyKyPy3/clean/internal/domain/common"
 	domain_core "github.com/KyKyPy3/clean/internal/domain/core"
 	"github.com/KyKyPy3/clean/internal/modules/registration/application/ports"
 	"github.com/KyKyPy3/clean/pkg/logger"
-	"github.com/KyKyPy3/clean/pkg/mediator"
 )
 
 const ConfirmRegistrationKind = "ConfirmRegistration"
@@ -28,16 +25,16 @@ func (c ConfirmRegistrationCommand) Type() core.CommandType {
 var _ core.Command = (*ConfirmRegistrationCommand)(nil)
 
 type ConfirmRegistration struct {
-	manager  *manager.Manager
+	manager  ports.TrManager
 	storage  ports.RegistrationPgStorage
-	mediator *mediator.Mediator
+	mediator ports.Mediator
 	logger   logger.Logger
 }
 
 func NewConfirmRegistration(
 	storage ports.RegistrationPgStorage,
-	mediator *mediator.Mediator,
-	manager *manager.Manager,
+	mediator ports.Mediator,
+	manager ports.TrManager,
 	logger logger.Logger,
 ) ConfirmRegistration {
 	return ConfirmRegistration{

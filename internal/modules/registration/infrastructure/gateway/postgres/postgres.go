@@ -2,7 +2,6 @@ package postgres
 
 import (
 	"context"
-	"github.com/KyKyPy3/clean/internal/modules/registration/application/ports"
 
 	trmsqlx "github.com/avito-tech/go-transaction-manager/drivers/sqlx/v2"
 	"github.com/jmoiron/sqlx"
@@ -12,6 +11,7 @@ import (
 
 	"github.com/KyKyPy3/clean/internal/domain/common"
 	"github.com/KyKyPy3/clean/internal/domain/core"
+	"github.com/KyKyPy3/clean/internal/modules/registration/application/ports"
 	"github.com/KyKyPy3/clean/internal/modules/registration/domain/entity"
 	"github.com/KyKyPy3/clean/pkg/logger"
 )

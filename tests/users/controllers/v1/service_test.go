@@ -39,8 +39,11 @@ func TestClear_SuccessPath(t *testing.T) {
 
 	token := res.Path("$.data").Object().Value("access_token").String().Raw()
 
-	res = e.GET("/api/v1/user").
-		WithHeader("Authorization", "Bearer "+token).
+	auth := e.Builder(func(req *httpexpect.Request) {
+		req.WithHeader("Authorization", "Bearer "+token)
+	})
+
+	res = auth.GET("/api/v1/user").
 		Expect().
 		Status(http.StatusOK).JSON().Object()
 

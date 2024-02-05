@@ -16,7 +16,6 @@ import (
 	handlers "github.com/KyKyPy3/clean/internal/modules/registration/infrastructure/controller/http/v1"
 	events "github.com/KyKyPy3/clean/internal/modules/registration/infrastructure/controller/queue/v1"
 	"github.com/KyKyPy3/clean/internal/modules/registration/infrastructure/gateway/email"
-	user_event "github.com/KyKyPy3/clean/internal/modules/user/application/event"
 	"github.com/KyKyPy3/clean/pkg/logger"
 	"github.com/KyKyPy3/clean/pkg/mediator"
 	"github.com/KyKyPy3/clean/pkg/outbox"
@@ -27,7 +26,8 @@ const (
 )
 
 func InitHandlers(
-	userViewStorage ports.UserPgStorage,
+	ctx context.Context,
+	userViewStorage ports.UserViewStorage,
 	regPgStorage ports.RegistrationPgStorage,
 	mountPoint *echo.Group,
 	pubsub *mediator.Mediator,
@@ -37,7 +37,7 @@ func InitHandlers(
 	outboxManager outbox.Manager,
 	logger logger.Logger,
 ) {
-	regUniqPolicy := application.NewUniquenessPolicy(userViewStorage, logger)
+	regUniqPolicy := application.NewUniquenessPolicy(ctx, userViewStorage, logger)
 	regCmdBus := core.NewCommandBus()
 	regCmdBus.Register(
 		command.CreateRegistrationKind,
@@ -62,8 +62,6 @@ func InitHandlers(
 
 		return nil
 	})
-
-	pubsub.Subscribe(event.RegistrationVerified, user_event.NewRegistrationVerified(logger, userViewStorage).Handle)
 
 	handlers.NewRegistrationHandlers(mountPoint, regCmdBus, logger)
 	events.NewRegistrationEvents(consumer, regCmdBus, logger)

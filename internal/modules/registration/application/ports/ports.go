@@ -17,13 +17,10 @@ type TrManager interface {
 	Do(ctx context.Context, fn func(ctx context.Context) error) (err error)
 }
 
-type UserPgStorage interface {
+type UserViewStorage interface {
 	Fetch(ctx context.Context, limit, offset int64) ([]user_domain.User, error)
-	Create(ctx context.Context, data user_domain.User) error
-	Update(ctx context.Context, data user_domain.User) error
 	GetByEmail(ctx context.Context, email common.Email) (user_domain.User, error)
 	GetByID(ctx context.Context, id common.UID) (user_domain.User, error)
-	Delete(ctx context.Context, id common.UID) error
 }
 
 type EmailSender interface {
@@ -31,7 +28,7 @@ type EmailSender interface {
 }
 
 type UniquenessPolicer interface {
-	IsUnique(ctx context.Context, email common.Email) (bool, error)
+	IsUnique(email common.Email) (bool, error)
 }
 
 type RegistrationPgStorage interface {

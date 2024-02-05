@@ -14,7 +14,7 @@ const SendEmailKind = "SendEmail"
 
 type SendEmailCommand struct {
 	ID    string
-	Email common.Email
+	Email string
 }
 
 func (c SendEmailCommand) Type() core.CommandType {
@@ -41,5 +41,11 @@ func (s *SendEmail) Handle(ctx context.Context, command core.Command) (any, erro
 		return nil, fmt.Errorf("command type %s: %w", command.Type(), core.ErrUnexpectedCommand)
 	}
 
-	return nil, s.sender.Send(ctx, sendCommand.Email, "Registration email", "Test body")
+	email, err := common.NewEmail(sendCommand.Email)
+	if err != nil {
+		return nil, err
+	}
+
+	// TOFIX: get subject and body from config template
+	return nil, s.sender.Send(ctx, email, "Registration email", "Test body")
 }

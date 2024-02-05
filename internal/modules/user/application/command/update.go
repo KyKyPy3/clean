@@ -5,15 +5,12 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
-
 	"github.com/KyKyPy3/clean/internal/application/core"
 	"github.com/KyKyPy3/clean/internal/domain/common"
 	domain_core "github.com/KyKyPy3/clean/internal/domain/core"
 	"github.com/KyKyPy3/clean/internal/modules/user/application/ports"
 	"github.com/KyKyPy3/clean/internal/modules/user/domain/value_object"
 	"github.com/KyKyPy3/clean/pkg/logger"
-	"github.com/KyKyPy3/clean/pkg/mediator"
 )
 
 const UpdateUserKind = "UpdateUser"
@@ -34,21 +31,24 @@ var _ core.Command = (*UpdateUserCommand)(nil)
 
 type UpdateUser struct {
 	storage  ports.UserPgStorage
-	manager  *manager.Manager
-	mediator *mediator.Mediator
+	policy   ports.UniquenessPolicer
+	manager  ports.TrManager
+	mediator ports.Mediator
 	logger   logger.Logger
 }
 
 func NewUpdateUser(
 	storage ports.UserPgStorage,
-	manager *manager.Manager,
-	mediator *mediator.Mediator,
+	manager ports.TrManager,
+	mediator ports.Mediator,
+	policy ports.UniquenessPolicer,
 	logger logger.Logger,
 ) UpdateUser {
 	return UpdateUser{
 		storage:  storage,
 		manager:  manager,
 		mediator: mediator,
+		policy:   policy,
 		logger:   logger,
 	}
 }
@@ -74,6 +74,8 @@ func (c UpdateUser) Handle(ctx context.Context, command core.Command) (any, erro
 		return nil, err
 	}
 
+	// TOFIX: add check for email uniq
+
 	err = c.manager.Do(ctx, func(ctx context.Context) error {
 		user, err := c.storage.GetByID(ctx, id)
 		if err != nil && !errors.Is(err, domain_core.ErrNotFound) {
@@ -84,7 +86,10 @@ func (c UpdateUser) Handle(ctx context.Context, command core.Command) (any, erro
 			return domain_core.ErrNotFound
 		}
 
-		user.UpdateEmail(email)
+		err = user.UpdateEmail(email, c.policy)
+		if err != nil {
+			return err
+		}
 		user.UpdateFullName(fullname)
 
 		err = c.storage.Update(ctx, user)

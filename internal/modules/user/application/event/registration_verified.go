@@ -15,12 +15,14 @@ import (
 
 type RegistrationVerified struct {
 	storage ports.UserPgStorage
+	policy  ports.UniquenessPolicer
 	logger  logger.Logger
 }
 
-func NewRegistrationVerified(logger logger.Logger, storage ports.UserPgStorage) *RegistrationVerified {
+func NewRegistrationVerified(logger logger.Logger, storage ports.UserPgStorage, policy ports.UniquenessPolicer) *RegistrationVerified {
 	return &RegistrationVerified{
 		storage: storage,
+		policy:  policy,
 		logger:  logger,
 	}
 }
@@ -42,7 +44,7 @@ func (r RegistrationVerified) handleEmailVerified(ctx context.Context, e event.R
 		return err
 	}
 
-	user, err := entity.NewUser(fullName, e.Email, e.Password)
+	user, err := entity.NewUser(fullName, e.Email, e.Password, r.policy)
 	if err != nil {
 		return err
 	}

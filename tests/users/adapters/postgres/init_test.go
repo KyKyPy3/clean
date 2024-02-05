@@ -1,7 +1,9 @@
 package postgres_test
 
 import (
+	"context"
 	"fmt"
+	"github.com/KyKyPy3/clean/internal/modules/user/application"
 	"log"
 	"os"
 	"testing"
@@ -30,6 +32,7 @@ const (
 var (
 	testDB   *sqlx.DB
 	repo     ports.UserPgStorage
+	policy   ports.UniquenessPolicer
 	pool     *dockertest.Pool
 	resource *dockertest.Resource
 )
@@ -52,6 +55,8 @@ func TestMain(m *testing.M) {
 	logger.Init()
 
 	repo = psql.NewUserPgStorage(testDB, trmsqlx.DefaultCtxGetter, logger)
+
+	policy = application.NewUniquenessPolicy(context.Background(), repo, logger)
 
 	// Run the tests
 	code := m.Run()

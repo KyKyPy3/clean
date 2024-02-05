@@ -2,7 +2,6 @@ package infrastructure
 
 import (
 	"context"
-	"github.com/KyKyPy3/clean/internal/modules/session/infrastructure/controller/middleware"
 	"time"
 
 	trmsqlx "github.com/avito-tech/go-transaction-manager/drivers/sqlx/v2"
@@ -18,6 +17,7 @@ import (
 	reg_postgres "github.com/KyKyPy3/clean/internal/modules/registration/infrastructure/gateway/postgres"
 	queueGateway "github.com/KyKyPy3/clean/internal/modules/registration/infrastructure/gateway/queue"
 	"github.com/KyKyPy3/clean/internal/modules/session"
+	"github.com/KyKyPy3/clean/internal/modules/session/infrastructure/controller/middleware"
 	session_redis "github.com/KyKyPy3/clean/internal/modules/session/infrastructure/gateway/redis"
 	"github.com/KyKyPy3/clean/internal/modules/user"
 	user_postgres "github.com/KyKyPy3/clean/internal/modules/user/infrastructure/gateway/postgres"
@@ -42,6 +42,7 @@ type App struct {
 	web         *Web
 	jwt         *jwt.JWT
 	consumer    *queue.Consumer
+	producer    kafkaClient.Producer
 	lock        *latch.CountDownLatch
 	logger      logger.Logger
 }
@@ -101,12 +102,14 @@ func NewApp(
 		logger.Info("Kafka connected to brokers %+v", brokers)
 	}
 
+	// Init JWT manager
 	jwt, err := jwt.NewJWT(cfg.Certs.PrivateKey, cfg.Certs.PublicKey)
 	if err != nil {
 		logger.Fatalf("Can't parse certs: %s", err)
 	}
 
-	web := NewWeb(cfg, jwt, logger, lock)
+	web := NewWeb(cfg, logger, lock)
+	kafkaProducer := kafkaClient.NewProducer(logger, cfg.Kafka.Brokers)
 	consumer := queue.NewConsumer(cfg, lock, logger)
 
 	return &App{
@@ -117,17 +120,18 @@ func NewApp(
 		kafkaClient: kfClient,
 		jwt:         jwt,
 		redisClient: rdClient,
+		producer:    kafkaProducer,
 		web:         web,
 		consumer:    consumer,
 	}
 }
 
 func (a *App) Shutdown() {
+	_ = a.producer.Close()
+	_ = a.web.Shutdown()
 	_ = a.pgClient.Close()
 	_ = a.redisClient.Close()
 	_ = a.kafkaClient.Close()
-	_ = a.consumer.Stop()
-	_ = a.web.Shutdown()
 }
 
 func (a *App) Run(ctx context.Context) error {
@@ -163,14 +167,6 @@ func (a *App) Run(ctx context.Context) error {
 		a.lock.Done()
 	}()
 
-	kafkaProducer := kafkaClient.NewProducer(a.logger, a.cfg.Kafka.Brokers)
-	a.lock.Add(1)
-	go func() {
-		<-ctx.Done()
-		kafkaProducer.Close()
-		a.lock.Done()
-	}()
-
 	// Collect metrics
 	//meter := otel.GetMeterProvider().Meter("")
 	//testMetric, _ := meter.Int64Counter(
@@ -184,7 +180,7 @@ func (a *App) Run(ctx context.Context) error {
 		return err
 	}
 
-	a.connectHandlers(ctx, kafkaProducer)
+	a.connectHandlers(ctx)
 
 	err = a.consumer.Start(ctx)
 	if err != nil {
@@ -194,16 +190,16 @@ func (a *App) Run(ctx context.Context) error {
 	return nil
 }
 
-func (a *App) connectHandlers(ctx context.Context, producer kafkaClient.Producer) {
+func (a *App) connectHandlers(ctx context.Context) {
 	mountPoint := a.web.mountPoint()
 
 	// Health endpoint
-	NewHealthHandlers(mountPoint, a.logger, a)
+	NewHealthHandlers(mountPoint, a.logger, a.pgClient, a.redisClient, a.kafkaClient)
 
 	// Init core systems
 	pubsub := mediator.New(a.logger)
 	trManager := manager.Must(trmsqlx.NewDefaultFactory(a.pgClient))
-	queue := queueGateway.NewQueue(producer)
+	queue := queueGateway.NewQueue(a.producer)
 	outboxMngr := outbox.New(a.cfg, a.pgClient, queue, trmsqlx.DefaultCtxGetter, a.logger)
 	outboxMngr.Start(ctx, a.lock, outbox.Options{Heartbeat: time.Second * 15})
 	emailClient := email.New(a.logger)
@@ -220,17 +216,33 @@ func (a *App) connectHandlers(ctx context.Context, producer kafkaClient.Producer
 	////////////////////////////////
 	// Init user layout
 	////////////////////////////////
-	user.InitHandlers(userPgStorage, privateMountPoint, pubsub, trManager, a.logger)
+	user.InitHandlers(
+		ctx,
+		userPgStorage,
+		privateMountPoint,
+		pubsub,
+		trManager,
+		a.logger,
+	)
 
 	////////////////////////////////
 	// Init session layout
 	////////////////////////////////
-	session.InitHandlers(userPgStorage, sessionStorage, publicMountPoint, privateMountPoint, a.cfg, a.jwt, a.logger)
+	session.InitHandlers(
+		userPgStorage,
+		sessionStorage,
+		publicMountPoint,
+		privateMountPoint,
+		a.cfg,
+		a.jwt,
+		a.logger,
+	)
 
 	////////////////////////////////
 	// Init registration layout
 	////////////////////////////////
 	registration.InitHandlers(
+		ctx,
 		userPgStorage,
 		regPgStorage,
 		publicMountPoint,

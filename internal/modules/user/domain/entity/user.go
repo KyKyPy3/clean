@@ -2,7 +2,6 @@ package entity
 
 import (
 	"fmt"
-	"github.com/KyKyPy3/clean/pkg/mediator"
 	"strings"
 	"time"
 
@@ -10,7 +9,10 @@ import (
 
 	"github.com/KyKyPy3/clean/internal/domain/common"
 	"github.com/KyKyPy3/clean/internal/domain/core"
+	"github.com/KyKyPy3/clean/internal/modules/user/domain"
+	"github.com/KyKyPy3/clean/internal/modules/user/domain/event"
 	"github.com/KyKyPy3/clean/internal/modules/user/domain/value_object"
+	"github.com/KyKyPy3/clean/pkg/mediator"
 )
 
 // User struct
@@ -26,7 +28,12 @@ type User struct {
 }
 
 // NewUser - creates a new User instance with the provided username, password, and email.
-func NewUser(fullName value_object.FullName, email common.Email, password string) (User, error) {
+func NewUser(
+	fullName value_object.FullName,
+	email common.Email,
+	password string,
+	uniqPolicy domain.UniqueEmailPolicy,
+) (User, error) {
 	if fullName.IsEmpty() {
 		return User{}, fmt.Errorf("user fullname is empty, err: %w", core.ErrInvalidEntity)
 	}
@@ -35,7 +42,14 @@ func NewUser(fullName value_object.FullName, email common.Email, password string
 		return User{}, fmt.Errorf("user email is empty, err: %w", core.ErrInvalidEntity)
 	}
 
-	// TODO: добавить проверку на уникальность email через policy
+	ok, err := uniqPolicy.IsUnique(email)
+	if err != nil {
+		return User{}, fmt.Errorf("failed to check uniqueness of email on user, err: %w", err)
+	}
+
+	if !ok {
+		return User{}, fmt.Errorf("user with same email already exists, err: %w", core.ErrAlreadyExist)
+	}
 
 	user := User{
 		BaseAggregateRoot: &core.BaseAggregateRoot{},
@@ -44,6 +58,8 @@ func NewUser(fullName value_object.FullName, email common.Email, password string
 		email:             email,
 		password:          strings.TrimSpace(password),
 	}
+
+	user.BaseAggregateRoot.AddEvent(event.UserCreatedEvent{ID: user.ID().String(), FullName: fullName, Email: email})
 
 	return user, nil
 }
@@ -93,8 +109,19 @@ func (u *User) Email() common.Email {
 }
 
 // UpdateEmail set the email of the user.
-func (u *User) UpdateEmail(email common.Email) {
+func (u *User) UpdateEmail(email common.Email, uniqPolicy domain.UniqueEmailPolicy) error {
+	ok, err := uniqPolicy.IsUnique(email)
+	if err != nil {
+		return fmt.Errorf("failed to check uniqueness of email on user, err: %w", err)
+	}
+
+	if !ok {
+		return fmt.Errorf("user with same email already exists, err: %w", core.ErrAlreadyExist)
+	}
+
 	u.email = email
+
+	return nil
 }
 
 // Password returns the password of the user.
@@ -103,8 +130,22 @@ func (u *User) Password() string {
 }
 
 // UpdatePassword set the password of the user.
-func (u *User) UpdatePassword(password string) {
+func (u *User) UpdatePassword(password string) error {
 	u.password = password
+
+	return u.hashPassword()
+}
+
+// hashPassword hash user password
+func (u *User) hashPassword() error {
+	hash, err := bcrypt.GenerateFromPassword([]byte(u.password), 10)
+	if err != nil {
+		return err
+	}
+
+	u.password = string(hash)
+
+	return nil
 }
 
 func (u *User) CreatedAt() time.Time {

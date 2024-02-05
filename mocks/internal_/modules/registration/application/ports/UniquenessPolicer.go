@@ -3,10 +3,7 @@
 package mocks
 
 import (
-	context "context"
-
 	common "github.com/KyKyPy3/clean/internal/domain/common"
-
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -23,9 +20,9 @@ func (_m *UniquenessPolicer) EXPECT() *UniquenessPolicer_Expecter {
 	return &UniquenessPolicer_Expecter{mock: &_m.Mock}
 }
 
-// IsUnique provides a mock function with given fields: ctx, email
-func (_m *UniquenessPolicer) IsUnique(ctx context.Context, email common.Email) (bool, error) {
-	ret := _m.Called(ctx, email)
+// IsUnique provides a mock function with given fields: email
+func (_m *UniquenessPolicer) IsUnique(email common.Email) (bool, error) {
+	ret := _m.Called(email)
 
 	if len(ret) == 0 {
 		panic("no return value specified for IsUnique")
@@ -33,17 +30,17 @@ func (_m *UniquenessPolicer) IsUnique(ctx context.Context, email common.Email) (
 
 	var r0 bool
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, common.Email) (bool, error)); ok {
-		return rf(ctx, email)
+	if rf, ok := ret.Get(0).(func(common.Email) (bool, error)); ok {
+		return rf(email)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, common.Email) bool); ok {
-		r0 = rf(ctx, email)
+	if rf, ok := ret.Get(0).(func(common.Email) bool); ok {
+		r0 = rf(email)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, common.Email) error); ok {
-		r1 = rf(ctx, email)
+	if rf, ok := ret.Get(1).(func(common.Email) error); ok {
+		r1 = rf(email)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -57,15 +54,14 @@ type UniquenessPolicer_IsUnique_Call struct {
 }
 
 // IsUnique is a helper method to define mock.On call
-//   - ctx context.Context
 //   - email common.Email
-func (_e *UniquenessPolicer_Expecter) IsUnique(ctx interface{}, email interface{}) *UniquenessPolicer_IsUnique_Call {
-	return &UniquenessPolicer_IsUnique_Call{Call: _e.mock.On("IsUnique", ctx, email)}
+func (_e *UniquenessPolicer_Expecter) IsUnique(email interface{}) *UniquenessPolicer_IsUnique_Call {
+	return &UniquenessPolicer_IsUnique_Call{Call: _e.mock.On("IsUnique", email)}
 }
 
-func (_c *UniquenessPolicer_IsUnique_Call) Run(run func(ctx context.Context, email common.Email)) *UniquenessPolicer_IsUnique_Call {
+func (_c *UniquenessPolicer_IsUnique_Call) Run(run func(email common.Email)) *UniquenessPolicer_IsUnique_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(common.Email))
+		run(args[0].(common.Email))
 	})
 	return _c
 }
@@ -75,7 +71,7 @@ func (_c *UniquenessPolicer_IsUnique_Call) Return(_a0 bool, _a1 error) *Uniquene
 	return _c
 }
 
-func (_c *UniquenessPolicer_IsUnique_Call) RunAndReturn(run func(context.Context, common.Email) (bool, error)) *UniquenessPolicer_IsUnique_Call {
+func (_c *UniquenessPolicer_IsUnique_Call) RunAndReturn(run func(common.Email) (bool, error)) *UniquenessPolicer_IsUnique_Call {
 	_c.Call.Return(run)
 	return _c
 }

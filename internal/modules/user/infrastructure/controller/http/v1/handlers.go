@@ -4,17 +4,20 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/KyKyPy3/clean/internal/modules/user/application/query"
-	"github.com/KyKyPy3/clean/internal/modules/user/domain/entity"
 	"net/http"
 	"time"
 
 	"github.com/go-playground/validator"
 	"github.com/labstack/echo/v4"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/KyKyPy3/clean/internal/application/core"
 	common_http "github.com/KyKyPy3/clean/internal/infrastructure/controller/http"
+	http_dto "github.com/KyKyPy3/clean/internal/infrastructure/controller/http"
 	"github.com/KyKyPy3/clean/internal/modules/user/application/command"
+	"github.com/KyKyPy3/clean/internal/modules/user/application/query"
+	"github.com/KyKyPy3/clean/internal/modules/user/domain/entity"
 	"github.com/KyKyPy3/clean/internal/modules/user/infrastructure/controller/http/dto"
 	"github.com/KyKyPy3/clean/pkg/logger"
 )
@@ -32,11 +35,17 @@ type QueryBus interface {
 type UserHandlers struct {
 	Commands CommandBus
 	Queries  QueryBus
+	tracer   trace.Tracer
 	Logger   logger.Logger
 }
 
 func NewUserHandlers(v1 *echo.Group, commands CommandBus, queries QueryBus, logger logger.Logger) {
-	handlers := &UserHandlers{Commands: commands, Queries: queries, Logger: logger}
+	handlers := &UserHandlers{
+		Commands: commands,
+		Queries:  queries,
+		Logger:   logger,
+		tracer:   otel.Tracer(""),
+	}
 
 	v1.GET("/user", handlers.Fetch)
 	v1.POST("/user/:id", handlers.Update)
@@ -244,7 +253,41 @@ func (h *UserHandlers) Update(c echo.Context) error {
 // @Success 200 {object} entity.User
 // @Router /user/{id} [get]
 func (h *UserHandlers) GetByID(c echo.Context) error {
-	return c.JSON(http.StatusOK, "")
+	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
+	defer cancel()
+
+	ctx, span := h.tracer.Start(ctx, "UserHandlers.GetByID")
+	defer span.End()
+
+	id := c.Param("id")
+
+	h.Logger.Debugf("Get user with id '%v'", id)
+
+	q := query.FetchUserByIDQuery{
+		ID: id,
+	}
+	user, err := h.Queries.Ask(ctx, q)
+	if err != nil {
+		h.Logger.Errorf("Failed to get user by id %w", err)
+
+		return c.JSON(
+			http.StatusInternalServerError,
+			http_dto.ResponseDTO{
+				Status:  http.StatusInternalServerError,
+				Message: "error",
+				Error:   err.Error(),
+			},
+		)
+	}
+
+	return c.JSON(
+		http.StatusOK,
+		common_http.ResponseDTO{
+			Status:  http.StatusOK,
+			Message: "success",
+			Data:    dto.UserToResponse(user.(entity.User)),
+		},
+	)
 }
 
 func (h *UserHandlers) Delete(c echo.Context) error {

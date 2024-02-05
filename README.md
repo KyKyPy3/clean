@@ -2,6 +2,7 @@
 Example of clean architecture
 
 TODO:
+- [ ] Refactoring error handling
 - [ ] Migrate from viper to cleanenv
 - [ ] Migrate from echo to fiber
 - [ ] Add slog usage in zap logging

@@ -1,7 +1,6 @@
 package entity
 
 import (
-	"context"
 	"fmt"
 
 	"golang.org/x/crypto/bcrypt"
@@ -24,18 +23,18 @@ type Registration struct {
 }
 
 // NewRegistration - create and validate registration
-func NewRegistration(ctx context.Context, email common.Email, password string, uniqPolicy domain.UniqueEmailPolicy) (Registration, error) {
+func NewRegistration(email common.Email, password string, uniqPolicy domain.UniqueEmailPolicy) (Registration, error) {
 	if email.IsEmpty() {
 		return Registration{}, fmt.Errorf("registration email is empty, err: %w", core.ErrInvalidEntity)
 	}
 
-	ok, err := uniqPolicy.IsUnique(ctx, email)
+	ok, err := uniqPolicy.IsUnique(email)
 	if err != nil {
 		return Registration{}, fmt.Errorf("failed to check uniqueness of email on registration, err: %w", err)
 	}
 
 	if !ok {
-		return Registration{}, core.ErrAlreadyExist
+		return Registration{}, fmt.Errorf("user with same email already exists, err: %w", core.ErrAlreadyExist)
 	}
 
 	r := Registration{
@@ -47,7 +46,7 @@ func NewRegistration(ctx context.Context, email common.Email, password string, u
 	}
 
 	if err := r.hashPassword(); err != nil {
-		return Registration{}, err
+		return Registration{}, fmt.Errorf("can't hash password, err: %w", err)
 	}
 
 	r.BaseAggregateRoot.AddEvent(event.RegistrationCreatedEvent{ID: r.ID().String(), Email: email})

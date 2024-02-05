@@ -6,7 +6,7 @@ import (
 
 	"github.com/KyKyPy3/clean/internal/domain/common"
 	"github.com/KyKyPy3/clean/internal/domain/core"
-	"github.com/KyKyPy3/clean/internal/modules/registration/application/ports"
+	"github.com/KyKyPy3/clean/internal/modules/user/application/ports"
 	"github.com/KyKyPy3/clean/pkg/logger"
 )
 

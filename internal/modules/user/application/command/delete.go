@@ -4,15 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/KyKyPy3/clean/internal/domain/common"
-	domain_core "github.com/KyKyPy3/clean/internal/domain/core"
-
-	"github.com/avito-tech/go-transaction-manager/trm/v2/manager"
 
 	"github.com/KyKyPy3/clean/internal/application/core"
+	"github.com/KyKyPy3/clean/internal/domain/common"
+	domain_core "github.com/KyKyPy3/clean/internal/domain/core"
 	"github.com/KyKyPy3/clean/internal/modules/user/application/ports"
 	"github.com/KyKyPy3/clean/pkg/logger"
-	"github.com/KyKyPy3/clean/pkg/mediator"
 )
 
 const DeleteUserKind = "DeleteUser"
@@ -29,15 +26,15 @@ var _ core.Command = (*DeleteUserCommand)(nil)
 
 type DeleteUser struct {
 	storage  ports.UserPgStorage
-	manager  *manager.Manager
-	mediator *mediator.Mediator
+	manager  ports.TrManager
+	mediator ports.Mediator
 	logger   logger.Logger
 }
 
 func NewDeleteUser(
 	storage ports.UserPgStorage,
-	manager *manager.Manager,
-	mediator *mediator.Mediator,
+	manager ports.TrManager,
+	mediator ports.Mediator,
 	logger logger.Logger,
 ) DeleteUser {
 	return DeleteUser{

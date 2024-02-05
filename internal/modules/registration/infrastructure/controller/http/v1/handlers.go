@@ -19,6 +19,8 @@ import (
 	"github.com/KyKyPy3/clean/pkg/logger"
 )
 
+const requestTimeout = 10 * time.Second
+
 type CommandBus interface {
 	Dispatch(context.Context, core.Command) (any, error)
 }
@@ -50,7 +52,7 @@ func NewRegistrationHandlers(v1 *echo.Group, commands CommandBus, logger logger.
 // @Router /registration [post]
 // @BasePath /v1
 func (r *RegistrationHandlers) Create(c echo.Context) error {
-	ctx, cancel := context.WithTimeout(c.Request().Context(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(c.Request().Context(), requestTimeout)
 	defer cancel()
 
 	ctx, span := r.tracer.Start(ctx, "RegistrationHandlers.Create")
@@ -135,7 +137,7 @@ func (r *RegistrationHandlers) Create(c echo.Context) error {
 // @Success 201
 // @Router /registration [get]
 func (r *RegistrationHandlers) Confirm(c echo.Context) error {
-	ctx, cancel := context.WithTimeout(c.Request().Context(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(c.Request().Context(), requestTimeout)
 	defer cancel()
 
 	ctx, span := r.tracer.Start(ctx, "RegistrationHandlers.Сonfirm")

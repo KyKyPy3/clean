@@ -88,7 +88,3 @@ func (c *Consumer) Subscribe(eventType string, handler EventHandler) {
 
 	c.handlers[eventType] = handler
 }
-
-func (_ *Consumer) Stop() error {
-	return nil
-}

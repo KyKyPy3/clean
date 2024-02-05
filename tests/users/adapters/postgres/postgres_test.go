@@ -4,12 +4,13 @@ import (
 	"context"
 	"testing"
 
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/require"
+
 	"github.com/KyKyPy3/clean/internal/domain/common"
 	"github.com/KyKyPy3/clean/internal/domain/core"
 	"github.com/KyKyPy3/clean/internal/modules/user/domain/entity"
 	"github.com/KyKyPy3/clean/internal/modules/user/domain/value_object"
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/require"
 )
 
 func TestFetch(t *testing.T) {
@@ -22,7 +23,7 @@ func TestCreate(t *testing.T) {
 	fullName, _ := value_object.NewFullName("Bob", "Smith", "Joseph")
 	email, _ := common.NewEmail("bob@email.com")
 
-	user, _ := entity.NewUser(fullName, email, "12345")
+	user, _ := entity.NewUser(fullName, email, "12345", policy)
 
 	err := repo.Create(context.Background(), user)
 	require.NoError(t, err)

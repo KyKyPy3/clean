@@ -2,13 +2,13 @@ package v1
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/segmentio/kafka-go"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/KyKyPy3/clean/internal/application/core"
-	"github.com/KyKyPy3/clean/internal/domain/common"
 	"github.com/KyKyPy3/clean/internal/infrastructure/queue"
 	reg_event "github.com/KyKyPy3/clean/internal/modules/registration/application/event"
 	"github.com/KyKyPy3/clean/pkg/logger"
@@ -16,6 +16,11 @@ import (
 
 type CommandBus interface {
 	Dispatch(context.Context, core.Command) (any, error)
+}
+
+type RegistrationEvent struct {
+	ID    string
+	Email string
 }
 
 type RegistrationEvents struct {
@@ -40,16 +45,17 @@ func (r *RegistrationEvents) Handle(ctx context.Context, event *kafka.Message) e
 	ctx, span := r.tracer.Start(ctx, "RegistrationEvents.Handle")
 	defer span.End()
 
-	r.logger.Debugf("Receive event from queue %v", event)
-
-	email, err := common.NewEmail("zi81@nm.ru")
+	regEvent := RegistrationEvent{}
+	err := json.Unmarshal(event.Value, &regEvent)
 	if err != nil {
 		return err
 	}
 
+	r.logger.Debugf("Receive event from queue %+v", regEvent)
+
 	cmd := reg_event.SendEmailCommand{
-		ID:    "1",
-		Email: email,
+		ID:    regEvent.ID,
+		Email: regEvent.Email,
 	}
 	_, err = r.commands.Dispatch(ctx, cmd)
 	if err != nil {
