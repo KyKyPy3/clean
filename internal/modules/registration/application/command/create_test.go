@@ -1,4 +1,4 @@
-package command
+package command_test
 
 import (
 	"context"
@@ -10,6 +10,7 @@ import (
 	"github.com/KyKyPy3/clean/internal/application/core"
 	"github.com/KyKyPy3/clean/internal/domain/common"
 	domain_core "github.com/KyKyPy3/clean/internal/domain/core"
+	"github.com/KyKyPy3/clean/internal/modules/registration/application/command"
 	mocks "github.com/KyKyPy3/clean/mocks/internal_/application/core"
 	ports "github.com/KyKyPy3/clean/mocks/internal_/modules/registration/application/ports"
 	"github.com/KyKyPy3/clean/pkg/logger"
@@ -32,7 +33,13 @@ func TestHandleUnsupportedCreateRegistrationCommandError(t *testing.T) {
 	managerMock := ports.NewTrManager(t)
 	mediatorMock := ports.NewMediator(t)
 
-	createRegistrationCommandHandler := NewCreateRegistration(registrationStorageMock, policyMock, managerMock, mediatorMock, log)
+	createRegistrationCommandHandler := command.NewCreateRegistration(
+		registrationStorageMock,
+		policyMock,
+		managerMock,
+		mediatorMock,
+		log,
+	)
 	_, err := createRegistrationCommandHandler.Handle(context.Background(), unsupportedCommand)
 
 	registrationStorageMock.AssertExpectations(t)
@@ -49,14 +56,20 @@ func TestHandleUnsupportedCreateRegistrationEmailError(t *testing.T) {
 	email := "test"
 	password := "12345"
 
-	createRegistrationCommand := NewCreateRegistrationCommand(email, password)
+	createRegistrationCommand := command.NewCreateRegistrationCommand(email, password)
 
 	registrationStorageMock := ports.NewRegistrationPgStorage(t)
 	policyMock := ports.NewUniquenessPolicer(t)
 	managerMock := ports.NewTrManager(t)
 	mediatorMock := ports.NewMediator(t)
 
-	createRegistrationCommandHandler := NewCreateRegistration(registrationStorageMock, policyMock, managerMock, mediatorMock, log)
+	createRegistrationCommandHandler := command.NewCreateRegistration(
+		registrationStorageMock,
+		policyMock,
+		managerMock,
+		mediatorMock,
+		log,
+	)
 	_, err := createRegistrationCommandHandler.Handle(context.Background(), createRegistrationCommand)
 
 	registrationStorageMock.AssertExpectations(t)
@@ -73,7 +86,7 @@ func TestHandleUnsupportedCreateRegistrationNotUniqError(t *testing.T) {
 	email := "test@mail.com"
 	password := "12345"
 
-	createRegistrationCommand := NewCreateRegistrationCommand(email, password)
+	createRegistrationCommand := command.NewCreateRegistrationCommand(email, password)
 
 	registrationStorageMock := ports.NewRegistrationPgStorage(t)
 	policyMock := ports.NewUniquenessPolicer(t)
@@ -82,7 +95,13 @@ func TestHandleUnsupportedCreateRegistrationNotUniqError(t *testing.T) {
 
 	policyMock.On("IsUnique", mock.Anything, mock.Anything).Return(false, nil)
 
-	createRegistrationCommandHandler := NewCreateRegistration(registrationStorageMock, policyMock, managerMock, mediatorMock, log)
+	createRegistrationCommandHandler := command.NewCreateRegistration(
+		registrationStorageMock,
+		policyMock,
+		managerMock,
+		mediatorMock,
+		log,
+	)
 	_, err := createRegistrationCommandHandler.Handle(context.Background(), createRegistrationCommand)
 
 	registrationStorageMock.AssertExpectations(t)
@@ -99,7 +118,7 @@ func TestHandleCreateRegistrationCommandSuccess(t *testing.T) {
 	email := "test@gmail.com"
 	password := "12345"
 
-	createRegistrationCommand := NewCreateRegistrationCommand(email, password)
+	createRegistrationCommand := command.NewCreateRegistrationCommand(email, password)
 
 	registrationStorageMock := ports.NewRegistrationPgStorage(t)
 	policyMock := ports.NewUniquenessPolicer(t)
@@ -107,13 +126,21 @@ func TestHandleCreateRegistrationCommandSuccess(t *testing.T) {
 	mediatorMock := ports.NewMediator(t)
 
 	policyMock.On("IsUnique", mock.Anything, mock.Anything).Return(true, nil)
-	managerMock.EXPECT().Do(mock.Anything, mock.Anything).RunAndReturn(func(ctx context.Context, fn func(context.Context) error) error {
-		return fn(ctx)
-	})
+	managerMock.
+		EXPECT().Do(mock.Anything, mock.Anything).
+		RunAndReturn(func(ctx context.Context, fn func(context.Context) error) error {
+			return fn(ctx)
+		})
 	mediatorMock.On("Publish", mock.Anything, mock.Anything).Return(nil)
 	registrationStorageMock.On("Create", mock.Anything, mock.Anything).Return(nil)
 
-	createRegistrationCommandHandler := NewCreateRegistration(registrationStorageMock, policyMock, managerMock, mediatorMock, log)
+	createRegistrationCommandHandler := command.NewCreateRegistration(
+		registrationStorageMock,
+		policyMock,
+		managerMock,
+		mediatorMock,
+		log,
+	)
 	_, err := createRegistrationCommandHandler.Handle(context.Background(), createRegistrationCommand)
 
 	registrationStorageMock.AssertExpectations(t)

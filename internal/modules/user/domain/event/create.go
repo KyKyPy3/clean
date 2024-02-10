@@ -2,14 +2,14 @@ package event
 
 import (
 	"github.com/KyKyPy3/clean/internal/domain/common"
-	"github.com/KyKyPy3/clean/internal/modules/user/domain/value_object"
+	"github.com/KyKyPy3/clean/internal/modules/user/domain/vo"
 )
 
 const UserCreated = "UserCreated"
 
 type UserCreatedEvent struct {
 	ID       string
-	FullName value_object.FullName
+	FullName vo.FullName
 	Email    common.Email
 }
 

@@ -135,6 +135,9 @@ lint: $(GOLANGCI)
 	golangci-lint version
 	golangci-lint run ./...
 
+arch-lint: $(GOARCH)
+	go-arch-lint check
+
 mock: $(MOCKERY)
 	mockery
 

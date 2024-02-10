@@ -9,6 +9,7 @@ import (
 	"github.com/KyKyPy3/clean/internal/domain/common"
 	domain_core "github.com/KyKyPy3/clean/internal/domain/core"
 	"github.com/KyKyPy3/clean/internal/modules/registration/application/ports"
+	"github.com/KyKyPy3/clean/internal/modules/registration/domain/entity"
 	"github.com/KyKyPy3/clean/pkg/logger"
 )
 
@@ -57,7 +58,8 @@ func (c ConfirmRegistration) Handle(ctx context.Context, command core.Command) (
 	}
 
 	err = c.manager.Do(ctx, func(ctx context.Context) error {
-		reg, err := c.storage.GetByID(ctx, id)
+		var reg entity.Registration
+		reg, err = c.storage.GetByID(ctx, id)
 		if err != nil {
 			return err
 		}
@@ -87,7 +89,8 @@ func (c ConfirmRegistration) Handle(ctx context.Context, command core.Command) (
 		return nil, err
 	}
 
-	return nil, nil
+	var res interface{}
+	return res, nil
 }
 
 var _ core.CommandHandler = (*ConfirmRegistration)(nil)

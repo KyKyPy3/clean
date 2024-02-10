@@ -2,8 +2,8 @@ package postgres_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"github.com/KyKyPy3/clean/internal/modules/user/application"
 	"log"
 	"os"
 	"testing"
@@ -17,6 +17,7 @@ import (
 	"github.com/ory/dockertest/v3"
 	"github.com/ory/dockertest/v3/docker"
 
+	"github.com/KyKyPy3/clean/internal/modules/user/application"
 	"github.com/KyKyPy3/clean/internal/modules/user/application/ports"
 	psql "github.com/KyKyPy3/clean/internal/modules/user/infrastructure/gateway/postgres"
 	"github.com/KyKyPy3/clean/pkg/logger"
@@ -104,8 +105,7 @@ func setupDockerTestEnvironment() {
 			log.Fatalf("Failed to create resource: %s", err)
 		}
 
-		if err := pool.Retry(func() error {
-			var err error
+		if err = pool.Retry(func() error {
 			testDB, err = sqlx.Open(dbDriver, fmt.Sprintf(dbSource, resource.GetPort("5432/tcp")))
 			if err != nil {
 				return err
@@ -142,7 +142,7 @@ func applyDatabaseMigrations() {
 		log.Fatalf("Failed to initialize migration instance: %s", err)
 	}
 
-	if err := migration.Up(); err != nil && err != migrate.ErrNoChange {
+	if err = migration.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		closeMigrate(migration)
 
 		log.Fatalf("Failed to apply migrations: %s", err)
@@ -168,7 +168,7 @@ func applyDatabaseSeed() {
 		log.Fatalf("Failed to initialize migration instance: %s", err)
 	}
 
-	if err := migration.Up(); err != nil && err != migrate.ErrNoChange {
+	if err = migration.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		closeMigrate(migration)
 		log.Fatalf("Failed to apply seed: %s", err)
 	}

@@ -5,16 +5,18 @@ import (
 	"fmt"
 	"time"
 
-	_ "github.com/jackc/pgx/stdlib"
+	_ "github.com/jackc/pgx/stdlib" // use in lib
 	"github.com/jmoiron/sqlx"
 )
+
+const maxIdleConnections = 30
 
 type Config struct {
 	Host         string
 	Port         string
 	User         string
 	Password     string
-	DbName       string
+	DBName       string
 	SSLMode      bool
 	MaxOpenConn  int
 	ConnLifetime time.Duration
@@ -26,7 +28,7 @@ func New(ctx context.Context, cfg Config) (*sqlx.DB, error) {
 		cfg.Host,
 		cfg.Port,
 		cfg.User,
-		cfg.DbName,
+		cfg.DBName,
 		cfg.Password,
 	)
 
@@ -37,7 +39,7 @@ func New(ctx context.Context, cfg Config) (*sqlx.DB, error) {
 
 	db.SetMaxOpenConns(cfg.MaxOpenConn)
 	db.SetConnMaxLifetime(cfg.ConnLifetime)
-	db.SetMaxIdleConns(30)
+	db.SetMaxIdleConns(maxIdleConnections)
 	db.SetConnMaxIdleTime(cfg.MaxIdleTime)
 	if err = db.PingContext(ctx); err != nil {
 		return nil, err

@@ -1,12 +1,18 @@
-package common
+package common_test
 
 import (
 	"errors"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/require"
+
+	"github.com/KyKyPy3/clean/internal/domain/common"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestEmail_NewEmail(t *testing.T) {
+	t.Parallel()
+
 	// Build our needed testcase data struct
 	type testCase struct {
 		test        string
@@ -19,7 +25,7 @@ func TestEmail_NewEmail(t *testing.T) {
 		{
 			test:        "Empty Email validation",
 			email:       "",
-			expectedErr: ErrEmptyEmail,
+			expectedErr: common.ErrEmptyEmail,
 		}, {
 			test:        "Valid Email",
 			email:       "peter.parker@email.com",
@@ -27,7 +33,7 @@ func TestEmail_NewEmail(t *testing.T) {
 		}, {
 			test:        "Invalid Email",
 			email:       "peter.parker",
-			expectedErr: ErrBadFormat,
+			expectedErr: common.ErrBadFormat,
 		},
 	}
 
@@ -40,7 +46,7 @@ func TestEmail_NewEmail(t *testing.T) {
 			t.Parallel()
 
 			// Create a new email
-			_, err := NewEmail(email)
+			_, err := common.NewEmail(email)
 			// Check if the error matches the expected error
 			if !errors.Is(err, expectedErr) {
 				t.Errorf("Expected error %v, got %v", expectedErr, err)
@@ -50,21 +56,21 @@ func TestEmail_NewEmail(t *testing.T) {
 }
 
 func TestEmail_String(t *testing.T) {
-	email, _ := NewEmail("peter.parker@gmail.com")
+	email, _ := common.NewEmail("peter.parker@gmail.com")
 
-	assert.Equal(t, email.String(), "peter.parker@gmail.com")
+	assert.Equal(t, "peter.parker@gmail.com", email.String())
 }
 
 func TestEmail_IsEmpty(t *testing.T) {
-	email := Email{}
+	email := common.Email{}
 
-	assert.Equal(t, email.IsEmpty(), true)
+	assert.True(t, email.IsEmpty())
 }
 
 func TestEmail_MarshalText(t *testing.T) {
-	email, _ := NewEmail("peter.parker@gmail.com")
+	email, _ := common.NewEmail("peter.parker@gmail.com")
 	marshalled, err := email.MarshalText()
 
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, marshalled, []byte("peter.parker@gmail.com"))
 }

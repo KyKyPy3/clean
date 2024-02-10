@@ -17,7 +17,7 @@ import (
 
 	common_http "github.com/KyKyPy3/clean/internal/infrastructure/controller/http"
 	"github.com/KyKyPy3/clean/internal/modules/user/domain/entity"
-	"github.com/KyKyPy3/clean/internal/modules/user/infrastructure/controller/http/v1"
+	handlers "github.com/KyKyPy3/clean/internal/modules/user/infrastructure/controller/http/v1"
 	mocks "github.com/KyKyPy3/clean/mocks/internal_/modules/user/infrastructure/controller/http/v1"
 	"github.com/KyKyPy3/clean/pkg/logger"
 )
@@ -27,6 +27,8 @@ var (
 )
 
 func TestFetchHandler(t *testing.T) {
+	t.Parallel()
+
 	var mockUser entity.User
 	mockUserList := make([]entity.User, 0)
 	mockUserList = append(mockUserList, mockUser)
@@ -86,7 +88,7 @@ func TestFetchHandler(t *testing.T) {
 			userCommandBusMock := mocks.NewCommandBus(t)
 			userQueryBusMock := mocks.NewQueryBus(t)
 
-			handler := v1.UserHandlers{
+			handler := handlers.UserHandlers{
 				Commands: userCommandBusMock,
 				Queries:  userQueryBusMock,
 				Logger:   log,
@@ -111,7 +113,7 @@ func TestFetchHandler(t *testing.T) {
 
 			var d *common_http.ResponseDTO
 			err = json.NewDecoder(rec.Body).Decode(&d)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			assert.Equal(t, tc.respMessage, d.Message)
 			assert.Equal(t, tc.respError, d.Error)

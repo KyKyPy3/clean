@@ -49,7 +49,7 @@ type PostgresConfig struct {
 	Port         string
 	User         string
 	Password     string
-	DbName       string
+	DBName       string
 	SSLMode      bool
 	MaxOpenConn  int
 	ConnLifetime time.Duration
@@ -79,7 +79,8 @@ func NewConfig(path string) (*Config, error) {
 	v.AutomaticEnv()
 
 	if err := v.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+		var configFileNotFoundError viper.ConfigFileNotFoundError
+		if errors.As(err, &configFileNotFoundError) {
 			return nil, errors.New("config file not found")
 		}
 

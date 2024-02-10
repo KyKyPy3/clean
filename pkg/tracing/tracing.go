@@ -30,7 +30,7 @@ func New(ctx context.Context, service string) (func(context.Context) error, erro
 	otel.SetTracerProvider(tp)
 	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
 
-	return func(ctx context.Context) (err error) {
+	return func(ctx context.Context) error {
 		err = tp.ForceFlush(ctx)
 		if err != nil {
 			err = tp.Shutdown(ctx)

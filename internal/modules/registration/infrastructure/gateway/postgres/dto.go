@@ -5,7 +5,7 @@ import (
 	"github.com/KyKyPy3/clean/internal/modules/registration/domain/entity"
 )
 
-// DBRegistration Database registration representation
+// DBRegistration Database registration representation.
 type DBRegistration struct {
 	ID       string `db:"id"`
 	Email    string `db:"email"`
@@ -13,7 +13,7 @@ type DBRegistration struct {
 	Verified bool   `db:"verified"`
 }
 
-// RegistrationFromDB Convert database registration model to domain model
+// RegistrationFromDB Convert database registration model to domain model.
 func RegistrationFromDB(dbRegistration DBRegistration) (entity.Registration, error) {
 	entityID, err := common.ParseUID(dbRegistration.ID)
 	if err != nil {
@@ -30,7 +30,7 @@ func RegistrationFromDB(dbRegistration DBRegistration) (entity.Registration, err
 	return r, nil
 }
 
-// RegistrationToDB Convert domain registration model to database model
+// RegistrationToDB Convert domain registration model to database model.
 func RegistrationToDB(registration entity.Registration) DBRegistration {
 	return DBRegistration{
 		ID:       registration.ID().String(),

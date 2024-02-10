@@ -1,3 +1,4 @@
+//nolint:godot // file has comments for swagger doc
 package v1
 
 import (
@@ -83,7 +84,8 @@ func (r *RegistrationHandlers) Create(c echo.Context) error {
 	}
 
 	err = c.Validate(params)
-	if validationErrors, ok := err.(validator.ValidationErrors); ok {
+	var validationErrors validator.ValidationErrors
+	if errors.As(err, &validationErrors) {
 		for _, e := range validationErrors {
 			errorList = append(errorList, &http_dto.ValidationError{
 				Field:  e.Field(),

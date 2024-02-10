@@ -34,6 +34,8 @@ import (
 	"github.com/KyKyPy3/clean/pkg/tracing"
 )
 
+const heartbeatInterval = time.Second * 15
+
 type App struct {
 	cfg         *config.Config
 	pgClient    *sqlx.DB
@@ -59,7 +61,7 @@ func NewApp(
 		Port:         cfg.Postgres.Port,
 		User:         cfg.Postgres.User,
 		Password:     cfg.Postgres.Password,
-		DbName:       cfg.Postgres.DbName,
+		DBName:       cfg.Postgres.DBName,
 		SSLMode:      cfg.Postgres.SSLMode,
 		MaxOpenConn:  cfg.Postgres.MaxOpenConn,
 		ConnLifetime: cfg.Postgres.ConnLifetime,
@@ -95,7 +97,8 @@ func NewApp(
 	if err != nil {
 		logger.Fatalf("Can't init Kafka connection: %s", err)
 	} else {
-		brokers, err := kfClient.Brokers()
+		var brokers []kafka.Broker
+		brokers, err = kfClient.Brokers()
 		if err != nil {
 			logger.Fatalf("Can't get kafka brokers: %s", err)
 		}
@@ -103,7 +106,7 @@ func NewApp(
 	}
 
 	// Init JWT manager
-	jwt, err := jwt.NewJWT(cfg.Certs.PrivateKey, cfg.Certs.PublicKey)
+	jwtManager, err := jwt.NewJWT(cfg.Certs.PrivateKey, cfg.Certs.PublicKey)
 	if err != nil {
 		logger.Fatalf("Can't parse certs: %s", err)
 	}
@@ -118,7 +121,7 @@ func NewApp(
 		lock:        lock,
 		pgClient:    pgClient,
 		kafkaClient: kfClient,
-		jwt:         jwt,
+		jwt:         jwtManager,
 		redisClient: rdClient,
 		producer:    kafkaProducer,
 		web:         web,
@@ -145,7 +148,7 @@ func (a *App) Run(ctx context.Context) error {
 	a.lock.Add(1)
 	go func() {
 		<-ctx.Done()
-		if err := traceShutdown(ctx); err != nil {
+		if err = traceShutdown(ctx); err != nil {
 			a.logger.Fatalf("Can't shutdown trace client: %s", err)
 		}
 		a.lock.Done()
@@ -161,19 +164,19 @@ func (a *App) Run(ctx context.Context) error {
 	a.lock.Add(1)
 	go func() {
 		<-ctx.Done()
-		if err := metricShutdown(ctx); err != nil {
+		if err = metricShutdown(ctx); err != nil {
 			a.logger.Fatalf("Can't shutdown metrics client: %s", err)
 		}
 		a.lock.Done()
 	}()
 
 	// Collect metrics
-	//meter := otel.GetMeterProvider().Meter("")
-	//testMetric, _ := meter.Int64Counter(
+	// meter := otel.GetMeterProvider().Meter("")
+	// testMetric, _ := meter.Int64Counter(
 	//	"test_metric",
 	//	otelmetric.WithDescription("Number of jobs received by the compute node"),
-	//)
-	//testMetric.Add(ctx, 1)
+	// )
+	// testMetric.Add(ctx, 1)
 
 	err = a.web.Start()
 	if err != nil {
@@ -201,7 +204,7 @@ func (a *App) connectHandlers(ctx context.Context) {
 	trManager := manager.Must(trmsqlx.NewDefaultFactory(a.pgClient))
 	queue := queueGateway.NewQueue(a.producer)
 	outboxMngr := outbox.New(a.cfg, a.pgClient, queue, trmsqlx.DefaultCtxGetter, a.logger)
-	outboxMngr.Start(ctx, a.lock, outbox.Options{Heartbeat: time.Second * 15})
+	outboxMngr.Start(ctx, a.lock, outbox.Options{Heartbeat: heartbeatInterval})
 	emailClient := email.New(a.logger)
 	emailGateway := email_gateway.New(emailClient, a.logger)
 

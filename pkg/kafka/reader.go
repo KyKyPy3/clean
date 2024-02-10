@@ -8,6 +8,7 @@ import (
 
 const (
 	maxAttempts            = 10
+	maxWaitTime            = 3 * time.Second
 	heartbeatInterval      = 1 * time.Second
 	minBytes               = 10e3 // 10KB
 	maxBytes               = 10e6 // 10MB
@@ -15,9 +16,10 @@ const (
 	commitInterval         = 0
 	partitionWatchInterval = 500 * time.Millisecond
 	dialTimeout            = 3 * time.Minute
+	maxReadBackoff         = 300 * time.Millisecond
 )
 
-// NewKafkaReader create new configured kafka reader
+// NewKafkaReader create new configured kafka reader.
 func NewKafkaReader(kafkaURL []string, topic, groupID string, errLogger kafka.Logger) *kafka.Reader {
 	return kafka.NewReader(kafka.ReaderConfig{
 		Brokers:                kafkaURL,
@@ -31,8 +33,8 @@ func NewKafkaReader(kafkaURL []string, topic, groupID string, errLogger kafka.Lo
 		PartitionWatchInterval: partitionWatchInterval,
 		ErrorLogger:            errLogger,
 		MaxAttempts:            maxAttempts,
-		MaxWait:                3 * time.Second,
+		MaxWait:                maxWaitTime,
 		Dialer:                 &kafka.Dialer{Timeout: dialTimeout},
-		ReadBackoffMax:         300 * time.Millisecond,
+		ReadBackoffMax:         maxReadBackoff,
 	})
 }

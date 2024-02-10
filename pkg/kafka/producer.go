@@ -20,7 +20,7 @@ type producer struct {
 	w       *kafka.Writer
 }
 
-// NewProducer create new queue producer
+// NewProducer create new queue producer.
 func NewProducer(log logger.Logger, brokers []string) Producer {
 	return &producer{log: log, brokers: brokers, w: NewWriter(brokers, kafka.LoggerFunc(log.Errorf))}
 }

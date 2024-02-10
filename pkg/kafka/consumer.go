@@ -12,7 +12,11 @@ import (
 
 const maxWait = 1 * time.Second
 
-// Worker kafka consumer worker fetch and process messages from reader
+type Consumer interface {
+	ConsumeTopic(ctx context.Context, topics []string, poolSize int, worker Worker) error
+}
+
+// Worker kafka consumer worker fetch and process messages from reader.
 type Worker func(ctx context.Context, r *kafka.Reader, workerID int) error
 
 type consumer struct {
@@ -21,12 +25,12 @@ type consumer struct {
 	log     logger.Logger
 }
 
-// NewConsumer kafka consumer constructor
-func NewConsumer(brokers []string, groupID string, log logger.Logger) *consumer {
+// NewConsumer kafka consumer constructor.
+func NewConsumer(brokers []string, groupID string, log logger.Logger) Consumer {
 	return &consumer{Brokers: brokers, GroupID: groupID, log: log}
 }
 
-// GetNewKafkaReader create new kafka reader
+// GetNewKafkaReader create new kafka reader.
 func (c *consumer) GetNewKafkaReader(kafkaURL []string, groupTopics []string, groupID string) *kafka.Reader {
 	return kafka.NewReader(kafka.ReaderConfig{
 		Brokers:                kafkaURL,
@@ -44,7 +48,7 @@ func (c *consumer) GetNewKafkaReader(kafkaURL []string, groupTopics []string, gr
 	})
 }
 
-// ConsumeTopic start consumer group with given worker and pool size
+// ConsumeTopic start consumer group with given worker and pool size.
 func (c *consumer) ConsumeTopic(ctx context.Context, topics []string, poolSize int, worker Worker) error {
 	r := c.GetNewKafkaReader(c.Brokers, topics, c.GroupID)
 

@@ -25,6 +25,8 @@ func (u *userRedisStorage) GetByID(ctx context.Context, id common.UID) (entity.U
 	_, span := otel.Tracer("").Start(ctx, "userRedisStorage.GetByID")
 	defer span.End()
 
+	u.logger.Debugf("ID: %s", id)
+
 	return entity.User{}, nil
 }
 
@@ -32,12 +34,17 @@ func (u *userRedisStorage) Set(ctx context.Context, key string, user entity.User
 	_, span := otel.Tracer("").Start(ctx, "userRedisStorage.Set")
 	defer span.End()
 
+	u.logger.Debugf("Key: %s", key)
+	u.logger.Debugf("User: %v", user)
+
 	return nil
 }
 
 func (u *userRedisStorage) Delete(ctx context.Context, key string) error {
 	_, span := otel.Tracer("").Start(ctx, "userRedisStorage.Delete")
 	defer span.End()
+
+	u.logger.Debugf("Key: %s", key)
 
 	return nil
 }

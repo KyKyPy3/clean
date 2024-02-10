@@ -64,5 +64,6 @@ func (l LogoutUser) Handle(ctx context.Context, command core.Command) (any, erro
 		return nil, err
 	}
 
-	return nil, nil
+	var res interface{}
+	return res, nil
 }

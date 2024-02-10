@@ -37,6 +37,8 @@ func NewHealthHandlers(
 }
 
 func (h *HealthHandlers) healthHandler(c echo.Context) error {
+	h.logger.Debugf("Health check called")
+
 	if err := h.postgresClient.Ping(); err != nil {
 		h.logger.Errorf("Health check failed: Postgres unavailable")
 		return c.JSON(http.StatusServiceUnavailable, map[string]string{"status": "Postgres is not healthy"})

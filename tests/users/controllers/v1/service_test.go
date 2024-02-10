@@ -7,13 +7,13 @@ import (
 	"github.com/gavv/httpexpect/v2"
 )
 
-const (
-	baseUrl = "http://localhost:8080"
+var (
+	baseURL = "http://localhost:8080"
 )
 
 func TestClear_SuccessPath(t *testing.T) {
 	e := httpexpect.WithConfig(httpexpect.Config{
-		BaseURL:  baseUrl,
+		BaseURL:  baseURL,
 		Reporter: httpexpect.NewRequireReporter(t),
 		Printers: []httpexpect.Printer{
 			httpexpect.NewCurlPrinter(t),

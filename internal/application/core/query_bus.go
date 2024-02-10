@@ -1,3 +1,4 @@
+//nolint:dupl // it different structure
 package core
 
 import (

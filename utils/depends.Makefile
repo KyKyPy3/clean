@@ -51,7 +51,7 @@ bin/tparse: bin
 MOCKERY := $(shell command -v mockery || echo "bin/mockery")
 mockery: bin/mockery ## Installs mockery (mocks generation)
 
-bin/mockery: VERSION := 2.39.1
+bin/mockery: VERSION := 2.40.3
 bin/mockery: GITHUB  := vektra/mockery
 bin/mockery: ARCHIVE := mockery_$(VERSION)_$(OSTYPE)_x86_64.tar.gz
 bin/mockery: bin
@@ -63,7 +63,7 @@ bin/mockery: bin
 GOLANGCI := $(shell command -v golangci-lint || echo "bin/golangci-lint")
 golangci-lint: bin/golangci-lint ## Installs golangci-lint (linter)
 
-bin/golangci-lint: VERSION := 1.55.2
+bin/golangci-lint: VERSION := 1.56.1
 bin/golangci-lint: GITHUB  := golangci/golangci-lint
 bin/golangci-lint: ARCHIVE := golangci-lint-$(VERSION)-$(OSTYPE)-amd64.tar.gz
 bin/golangci-lint: bin
@@ -71,11 +71,23 @@ bin/golangci-lint: bin
 	@ curl -Ls $(call github_url) | tar -zOxvf - $(shell printf golangci-lint-$(VERSION)-$(OSTYPE)-amd64/golangci-lint) > $@ && chmod +x $@
 	@ echo "done."
 
+# ~~ [ go-arch-lint ] ~~~ https://github.com/fe3dback/go-arch-lint/ ~~~~~~~~~~~~~~~~~~~~~
+GOARCH := $(shell command -v go-arch-lint || echo "bin/go-arch-lint")
+go-arch-lint: bin/go-arch-lint ## Installs go-arch-lint (linter)
+
+bin/go-arch-lint: VERSION := 1.11.0
+bin/go-arch-lint: GITHUB  := fe3dback/go-arch-lint
+bin/go-arch-lint: ARCHIVE := go-arch-lint_$(VERSION)_$(OSTYPE)_amd64.tar.gz
+bin/go-arch-lint: bin
+	@ printf "Install go-arch-lint... "
+	@ curl -Ls $(call github_url) | tar -zOxf - ./go-arch-lint > $@ && chmod +x $@
+	@ echo "done."
+
 # ~~ [ swag ] ~~~ https://github.com/swaggo/swag ~~~~~~~~~~~~~~~~~~~~~
 SWAG := $(shell command -v swag || echo "bin/swag")
 swag: bin/swag ## Installs swag (doc generator)
 
-bin/swag: VERSION := 1.16.2
+bin/swag: VERSION := 1.16.3
 bin/swag: GITHUB  := swaggo/swag
 bin/swag: ARCHIVE := swag_$(VERSION)_$(OSTYPE)_x86_64.tar.gz
 bin/swag: bin

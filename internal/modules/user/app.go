@@ -13,7 +13,7 @@ import (
 	"github.com/KyKyPy3/clean/internal/modules/user/application/event"
 	"github.com/KyKyPy3/clean/internal/modules/user/application/ports"
 	"github.com/KyKyPy3/clean/internal/modules/user/application/query"
-	"github.com/KyKyPy3/clean/internal/modules/user/infrastructure/controller/http/v1"
+	handlers "github.com/KyKyPy3/clean/internal/modules/user/infrastructure/controller/http/v1"
 	"github.com/KyKyPy3/clean/pkg/logger"
 	"github.com/KyKyPy3/clean/pkg/mediator"
 )
@@ -42,7 +42,10 @@ func InitHandlers(
 		query.NewFetchUserByID(userPgStorage, logger),
 	)
 
-	pubsub.Subscribe(reg_event.RegistrationVerified, event.NewRegistrationVerified(logger, userPgStorage, regUniqPolicy).Handle)
+	pubsub.Subscribe(
+		reg_event.RegistrationVerified,
+		event.NewRegistrationVerified(logger, userPgStorage, regUniqPolicy).Handle,
+	)
 
-	v1.NewUserHandlers(mountPoint, userCmdBus, userQueryBus, logger)
+	handlers.NewUserHandlers(mountPoint, userCmdBus, userQueryBus, logger)
 }

@@ -72,7 +72,7 @@ func (c CreateRegistration) Handle(ctx context.Context, command core.Command) (a
 	}
 
 	err = c.manager.Do(ctx, func(ctx context.Context) error {
-		err := c.storage.Create(ctx, reg)
+		err = c.storage.Create(ctx, reg)
 		if err != nil {
 			return err
 		}
@@ -88,7 +88,8 @@ func (c CreateRegistration) Handle(ctx context.Context, command core.Command) (a
 		return nil, err
 	}
 
-	return nil, nil
+	var res interface{}
+	return res, nil
 }
 
 var _ core.CommandHandler = (*CreateRegistration)(nil)

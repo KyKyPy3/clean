@@ -30,7 +30,7 @@ type UpdateUserDTO struct {
 	Email      string `json:"email" validate:"required"`
 }
 
-// UserToResponse - Convert domain user model to response model
+// UserToResponse - Convert domain user model to response model.
 func UserToResponse(user entity.User) UserDTO {
 	return UserDTO{
 		Name:       user.FullName().FirstName(),

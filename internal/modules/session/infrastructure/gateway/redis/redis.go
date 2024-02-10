@@ -41,7 +41,7 @@ func (s *sessionRedisStorage) Get(ctx context.Context, tokenID common.UID) (enti
 	}
 
 	token := DBToken{}
-	if err = json.Unmarshal(tokenBytes, &token); err != nil {
+	if err = json.Unmarshal(tokenBytes, &token); err != nil { //nolint:musttag // we read from redis
 		return entity.Token{}, err
 	}
 
@@ -53,13 +53,18 @@ func (s *sessionRedisStorage) Set(ctx context.Context, tokenID common.UID, token
 	defer span.End()
 
 	t := TokenToDB(token)
-	tokenBytes, err := json.Marshal(&t)
+	tokenBytes, err := json.Marshal(&t) //nolint:musttag // we read from redis
 	if err != nil {
 		return err
 	}
 
 	now := time.Now()
-	if err := s.db.Set(ctx, s.createKey(tokenID.String()), tokenBytes, time.Unix(token.ExpiresIn(), 0).Sub(now)).Err(); err != nil {
+	if err = s.db.Set(
+		ctx,
+		s.createKey(tokenID.String()),
+		tokenBytes,
+		time.Unix(token.ExpiresIn(), 0).Sub(now),
+	).Err(); err != nil {
 		return err
 	}
 

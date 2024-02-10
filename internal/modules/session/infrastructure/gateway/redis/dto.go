@@ -5,14 +5,14 @@ import (
 	"github.com/KyKyPy3/clean/internal/modules/session/domain/entity"
 )
 
-// DBToken Database session representation
+// DBToken Database session representation.
 type DBToken struct {
 	ID        string
 	UserID    string
 	ExpiresIn int64
 }
 
-// TokenFromDB Convert database token model to domain model
+// TokenFromDB Convert database token model to domain model.
 func TokenFromDB(dbToken DBToken) (entity.Token, error) {
 	entityID, err := common.ParseUID(dbToken.ID)
 	if err != nil {
@@ -29,7 +29,7 @@ func TokenFromDB(dbToken DBToken) (entity.Token, error) {
 	return token, nil
 }
 
-// TokenToDB Convert domain token model to database model
+// TokenToDB Convert domain token model to database model.
 func TokenToDB(session entity.Token) DBToken {
 	return DBToken{
 		ID:        session.ID().String(),

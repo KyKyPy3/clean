@@ -33,25 +33,25 @@ func NewUserPgStorage(db *sqlx.DB, getter *trmsqlx.CtxGetter, logger logger.Logg
 	}
 }
 
-// Fetch users with given limit
+// Fetch users with given limit.
 // TODO: think about offset - use numeric or time offset?
 func (u *userPgStorage) Fetch(ctx context.Context, limit, offset int64) ([]entity.User, error) {
 	ctx, span := u.tracer.Start(ctx, "userPgStorage.Fetch")
 	defer span.End()
 
-	stmt, err := u.getter.DefaultTrOrDB(ctx, u.db).PreparexContext(ctx, fetchSQL)
+	stmt, err := u.getter.DefaultTrOrDB(ctx, u.db).PreparexContext(ctx, FetchSQL)
 	if err != nil {
 		return nil, errors.Wrap(err, "Fetch.PreparexContext")
 	}
 	defer func() {
-		err := stmt.Close()
+		err = stmt.Close()
 		if err != nil {
 			u.logger.Errorf("[userPgStorage.Fetch] can't close fetch statement, err: %w", err)
 		}
 	}()
 
 	rows, err := stmt.QueryxContext(ctx, limit, offset)
-	if err != nil {
+	if err != nil || rows.Err() != nil {
 		u.logger.Errorf("[userPgStorage.Fetch] Can't fetch user with limit %d and offset %d, err: %w", limit, offset, err)
 		return nil, errors.Wrap(err, "Fetch.QueryxContext")
 	}
@@ -65,7 +65,7 @@ func (u *userPgStorage) Fetch(ctx context.Context, limit, offset int64) ([]entit
 
 	result := make([]entity.User, 0)
 	for rows.Next() {
-		user := DbUser{}
+		user := DBUser{}
 
 		err = rows.StructScan(&user)
 		if err != nil {
@@ -73,7 +73,8 @@ func (u *userPgStorage) Fetch(ctx context.Context, limit, offset int64) ([]entit
 			return nil, errors.Wrap(err, "Fetch.StructScan")
 		}
 
-		userEntity, err := UserFromDB(user)
+		var userEntity entity.User
+		userEntity, err = UserFromDB(user)
 		if err != nil {
 			u.logger.Errorf("[userPgStorage.Fetch] Can't convert user data to domain entity. err: %w", err)
 			return nil, errors.Wrap(err, "Fetch.UserFromDB")
@@ -84,24 +85,24 @@ func (u *userPgStorage) Fetch(ctx context.Context, limit, offset int64) ([]entit
 	return result, nil
 }
 
-// Create new user
+// Create new user.
 func (u *userPgStorage) Create(ctx context.Context, d entity.User) error {
 	ctx, span := u.tracer.Start(ctx, "userPgStorage.Create")
 	defer span.End()
 
-	stmt, err := u.getter.DefaultTrOrDB(ctx, u.db).PreparexContext(ctx, createSQL)
+	stmt, err := u.getter.DefaultTrOrDB(ctx, u.db).PreparexContext(ctx, CreateSQL)
 	if err != nil {
 		return errors.Wrap(err, "Create.PreparexContext")
 	}
 	defer func() {
-		err := stmt.Close()
+		err = stmt.Close()
 		if err != nil {
 			u.logger.Errorf("can't close create statement, err: %w", err)
 		}
 	}()
 
 	user := UserToDB(d)
-	if err := stmt.QueryRowxContext(
+	if err = stmt.QueryRowxContext(
 		ctx,
 		user.ID,
 		user.Name,
@@ -120,19 +121,19 @@ func (u *userPgStorage) Update(ctx context.Context, d entity.User) error {
 	ctx, span := u.tracer.Start(ctx, "userPgStorage.Update")
 	defer span.End()
 
-	stmt, err := u.getter.DefaultTrOrDB(ctx, u.db).PreparexContext(ctx, updateSQL)
+	stmt, err := u.getter.DefaultTrOrDB(ctx, u.db).PreparexContext(ctx, UpdateSQL)
 	if err != nil {
 		return errors.Wrap(err, "Update.PreparexContext")
 	}
 	defer func() {
-		err := stmt.Close()
+		err = stmt.Close()
 		if err != nil {
 			u.logger.Errorf("can't close create statement, err: %w", err)
 		}
 	}()
 
 	user := UserToDB(d)
-	if err := stmt.QueryRowxContext(
+	if err = stmt.QueryRowxContext(
 		ctx,
 		user.ID,
 		user.Name,
@@ -146,104 +147,62 @@ func (u *userPgStorage) Update(ctx context.Context, d entity.User) error {
 	return nil
 }
 
-// GetByID Get user by id
+// GetByID Get user by id.
 func (u *userPgStorage) GetByID(ctx context.Context, id common.UID) (entity.User, error) {
 	ctx, span := u.tracer.Start(ctx, "userPgStorage.GetByID")
 	defer span.End()
 
-	stmt, err := u.getter.DefaultTrOrDB(ctx, u.db).PreparexContext(ctx, getByIDSQL)
-	if err != nil {
-		return entity.User{}, errors.Wrap(err, "GetByID.PreparexContext")
-	}
-	defer func() {
-		err := stmt.Close()
-		if err != nil {
-			u.logger.Errorf("can't close getById statement, err: %w", err)
-		}
-	}()
-
-	rows, err := stmt.QueryxContext(ctx, id.GetID())
-	if err != nil {
-		u.logger.Errorf("Can't fetch user by id, err: %w", err)
-		return entity.User{}, errors.Wrap(err, "GetByID.QueryxContext")
-	}
-
-	defer func() {
-		errRow := rows.Close()
-		if errRow != nil {
-			u.logger.Errorf("Can't close fetched user rows, err: %w", errRow)
-		}
-	}()
-
-	result := make([]entity.User, 0)
-	for rows.Next() {
-		user := DbUser{}
-
-		err = rows.StructScan(&user)
-		if err != nil {
-			u.logger.Errorf("Can't scan user data. err: %w", err)
-			return entity.User{}, errors.Wrap(err, "GetByID.StructScan")
-		}
-
-		userEntity, err := UserFromDB(user)
-		if err != nil {
-			u.logger.Errorf("Can't convert user data to domain entity. err: %w", err)
-			return entity.User{}, errors.Wrap(err, "GetByID.UserFromDB")
-		}
-
-		result = append(result, userEntity)
-	}
-
-	if len(result) == 0 {
-		return entity.User{}, core.ErrNotFound
-	}
-
-	return result[0], nil
+	return u.getByParam(ctx, GetByIDSQL, id.GetID())
 }
 
-// GetByEmail Get user by email
+// GetByEmail Get user by email.
 func (u *userPgStorage) GetByEmail(ctx context.Context, email common.Email) (entity.User, error) {
 	ctx, span := u.tracer.Start(ctx, "userPgStorage.GetByEmail")
 	defer span.End()
 
-	stmt, err := u.getter.DefaultTrOrDB(ctx, u.db).PreparexContext(ctx, getByEmailSQL)
+	return u.getByParam(ctx, GetByEmailSQL, email.String())
+}
+
+func (u *userPgStorage) getByParam(ctx context.Context, sqlQuery string, param any) (entity.User, error) {
+	stmt, err := u.getter.DefaultTrOrDB(ctx, u.db).PreparexContext(ctx, sqlQuery)
 	if err != nil {
-		return entity.User{}, errors.Wrap(err, "GetByEmail.PreparexContext")
+		return entity.User{}, errors.Wrap(err, "getByParam.PreparexContext")
 	}
 	defer func() {
-		err := stmt.Close()
+		err = stmt.Close()
 		if err != nil {
-			u.logger.Errorf("can't close getByEmail statement, err: %w", err)
+			u.logger.Errorf("can't close getByEmail statement, err: %v", err)
 		}
 	}()
 
-	rows, err := stmt.QueryxContext(ctx, email.String())
-	if err != nil {
-		u.logger.Errorf("Can't fetch user by email, err: %w", err)
-		return entity.User{}, errors.Wrap(err, "GetByEmail.QueryxContext")
+	rows, err := stmt.QueryxContext(ctx, param)
+	if err != nil || rows.Err() != nil {
+		u.logger.Errorf("Can't fetch user by param %v, err: %v", param, err)
+		return entity.User{}, errors.Wrap(err, "getByParam.QueryxContext")
 	}
 
 	defer func() {
 		errRow := rows.Close()
 		if errRow != nil {
-			u.logger.Errorf("Can't close fetched user rows, err: %w", errRow)
+			u.logger.Errorf("Can't close fetched user rows, err: %v", errRow)
 		}
 	}()
 
 	result := make([]entity.User, 0)
 	for rows.Next() {
-		user := DbUser{}
+		user := DBUser{}
 
 		err = rows.StructScan(&user)
 		if err != nil {
-			u.logger.Errorf("Can't scan user data. err: %w", err)
-			return entity.User{}, errors.Wrap(err, "GetByEmail.StructScan")
+			u.logger.Errorf("Can't scan user data. err: %v", err)
+			return entity.User{}, errors.Wrap(err, "getByParam.StructScan")
 		}
 
-		userEntity, err := UserFromDB(user)
+		var userEntity entity.User
+		userEntity, err = UserFromDB(user)
 		if err != nil {
-			u.logger.Errorf("Can't convert user data to domain entity. err: %w", err)
-			return entity.User{}, errors.Wrap(err, "GetByEmail.UserFromDB")
+			u.logger.Errorf("Can't convert user data to domain entity. err: %v", err)
+			return entity.User{}, errors.Wrap(err, "getByParam.UserFromDB")
 		}
 
 		result = append(result, userEntity)
@@ -256,17 +215,17 @@ func (u *userPgStorage) GetByEmail(ctx context.Context, email common.Email) (ent
 	return result[0], nil
 }
 
-// Delete user by provided id
+// Delete user by provided id.
 func (u *userPgStorage) Delete(ctx context.Context, id common.UID) error {
 	ctx, span := u.tracer.Start(ctx, "userPgStorage.Delete")
 	defer span.End()
 
-	stmt, err := u.getter.DefaultTrOrDB(ctx, u.db).PreparexContext(ctx, deleteSQL)
+	stmt, err := u.getter.DefaultTrOrDB(ctx, u.db).PreparexContext(ctx, DeleteSQL)
 	if err != nil {
 		return errors.Wrap(err, "Delete.PreparexContext")
 	}
 	defer func() {
-		err := stmt.Close()
+		err = stmt.Close()
 		if err != nil {
 			u.logger.Errorf("can't close delete statement, err: %w", err)
 		}

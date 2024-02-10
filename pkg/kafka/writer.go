@@ -15,7 +15,7 @@ const (
 	batchSize          = 100
 )
 
-// NewWriter create new configured kafka writer
+// NewWriter create new configured kafka writer.
 func NewWriter(brokers []string, errLogger kafka.Logger) *kafka.Writer {
 	return &kafka.Writer{
 		Addr:         kafka.TCP(brokers...),

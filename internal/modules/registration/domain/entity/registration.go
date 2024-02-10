@@ -12,7 +12,9 @@ import (
 	"github.com/KyKyPy3/clean/pkg/mediator"
 )
 
-// Registration struct
+const passwordCost = 10
+
+// Registration struct.
 type Registration struct {
 	*core.BaseAggregateRoot
 
@@ -22,7 +24,7 @@ type Registration struct {
 	verified bool
 }
 
-// NewRegistration - create and validate registration
+// NewRegistration - create and validate registration.
 func NewRegistration(email common.Email, password string, uniqPolicy domain.UniqueEmailPolicy) (Registration, error) {
 	if email.IsEmpty() {
 		return Registration{}, fmt.Errorf("registration email is empty, err: %w", core.ErrInvalidEntity)
@@ -45,7 +47,7 @@ func NewRegistration(email common.Email, password string, uniqPolicy domain.Uniq
 		verified:          false,
 	}
 
-	if err := r.hashPassword(); err != nil {
+	if err = r.hashPassword(); err != nil {
 		return Registration{}, fmt.Errorf("can't hash password, err: %w", err)
 	}
 
@@ -97,9 +99,9 @@ func (r *Registration) Verify() error {
 	return nil
 }
 
-// hashPassword hash user password
+// hashPassword hash user password.
 func (r *Registration) hashPassword() error {
-	hash, err := bcrypt.GenerateFromPassword([]byte(r.password), 10)
+	hash, err := bcrypt.GenerateFromPassword([]byte(r.password), passwordCost)
 	if err != nil {
 		return err
 	}

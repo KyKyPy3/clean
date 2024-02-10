@@ -20,7 +20,7 @@ func New(emailClient *email.Client, logger logger.Logger) *Client {
 	}
 }
 
-func (c *Client) Send(ctx context.Context, destination common.Email, subject, body string) error {
+func (c *Client) Send(_ context.Context, destination common.Email, subject, _ string) error {
 	c.logger.Debugf("Send email with subject '%s' to destination '%s'.", subject, destination)
 
 	return nil

@@ -1,14 +1,15 @@
-package latch
+package latch_test
 
 import (
 	"testing"
 	"time"
 
+	"github.com/KyKyPy3/clean/pkg/latch"
 	"github.com/stretchr/testify/require"
 )
 
 func TestCountdownLatchOK(t *testing.T) {
-	latch := NewCountDownLatch()
+	latch := latch.NewCountDownLatch()
 	latch.Add(2)
 	go func() {
 		time.Sleep(100 * time.Millisecond)
@@ -24,7 +25,7 @@ func TestCountdownLatchOK(t *testing.T) {
 }
 
 func TestCountdownLatchClose(t *testing.T) {
-	latch := NewCountDownLatch()
+	latch := latch.NewCountDownLatch()
 	latch.Add(2)
 	go func() {
 		latch.Close()
@@ -34,7 +35,7 @@ func TestCountdownLatchClose(t *testing.T) {
 }
 
 func TestCountdownLatchWithTimeout(t *testing.T) {
-	latch := NewCountDownLatch()
+	latch := latch.NewCountDownLatch()
 	latch.Add(2)
 
 	timeout := latch.WaitWithTimeout(time.Second)
@@ -42,7 +43,7 @@ func TestCountdownLatchWithTimeout(t *testing.T) {
 }
 
 func TestCountdownLatchWithTimeoutNoAdd(t *testing.T) {
-	latch := NewCountDownLatch()
+	latch := latch.NewCountDownLatch()
 
 	timeout := latch.WaitWithTimeout(time.Second)
 	require.False(t, timeout)

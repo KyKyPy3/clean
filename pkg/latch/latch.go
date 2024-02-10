@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// NewCountDownLatch creates a new CountDownLatch
+// NewCountDownLatch creates a new CountDownLatch.
 func NewCountDownLatch() *CountDownLatch {
 	// creates a closed channel
 	c := make(chan struct{})
@@ -16,7 +16,7 @@ func NewCountDownLatch() *CountDownLatch {
 	}
 }
 
-// CountDownLatch is the same as sync.WaitGroup but with the ability to wait with timeout
+// CountDownLatch is the same as sync.WaitGroup but with the ability to wait with timeout.
 type CountDownLatch struct {
 	mu      sync.RWMutex
 	counter int
@@ -24,7 +24,7 @@ type CountDownLatch struct {
 	closed  bool
 }
 
-// Add increases/decreases the countdown
+// Add increases/decreases the countdown.
 func (l *CountDownLatch) Add(delta int) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
@@ -40,17 +40,17 @@ func (l *CountDownLatch) Add(delta int) {
 	}
 }
 
-// Done decreases the countdown by one
+// Done decreases the countdown by one.
 func (l *CountDownLatch) Done() {
 	l.Add(-1)
 }
 
-// Wait to be unblocked
+// Wait to be unblocked.
 func (l *CountDownLatch) Wait() <-chan struct{} {
 	return l.done
 }
 
-// WaitWithTimeout waits until the timeout runs out or until the countdown is zero
+// WaitWithTimeout waits until the timeout runs out or until the countdown is zero.
 func (l *CountDownLatch) WaitWithTimeout(timeout time.Duration) bool {
 	select {
 	case <-l.done:
@@ -61,7 +61,7 @@ func (l *CountDownLatch) WaitWithTimeout(timeout time.Duration) bool {
 	}
 }
 
-// Close closes the latch unblocking wait
+// Close closes the latch unblocking wait.
 func (l *CountDownLatch) Close() {
 	l.mu.Lock()
 	defer l.mu.Unlock()
@@ -73,7 +73,7 @@ func (l *CountDownLatch) Close() {
 	}
 }
 
-// Counter returns the current count down number
+// Counter returns the current count down number.
 func (l *CountDownLatch) Counter() int {
 	l.mu.Lock()
 	defer l.mu.Unlock()

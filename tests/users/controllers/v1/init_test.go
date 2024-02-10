@@ -1,4 +1,4 @@
-package service
+package service_test
 
 import (
 	"context"
@@ -22,10 +22,11 @@ import (
 )
 
 const (
-	dbDriver   = "postgres"
-	dbSource   = "postgresql://test:test@localhost:5432/clean_db?sslmode=disable"
-	migrations = "file://../../../../db/migrations"
-	seed       = "file://../../../../db/seed"
+	dbDriver       = "postgres"
+	dbSource       = "postgresql://test:test@localhost:5432/clean_db?sslmode=disable"
+	migrations     = "file://../../../../db/migrations"
+	seed           = "file://../../../../db/seed"
+	sessionTimeout = 10 * time.Second
 )
 
 // Declare a global variable to hold the Docker pool and resource.
@@ -148,13 +149,14 @@ func deployPostgres(pool *dockertest.Pool) (*dockertest.Resource, error) {
 		}
 	})
 	if err != nil {
-		return nil, fmt.Errorf("could not start resource: %v", err)
+		return nil, fmt.Errorf("could not start resource: %w", err)
 	}
 
 	// Ensure the Postgres container is ready to accept connections.
-	if err := pool.Retry(func() error {
-		fmt.Println("Checking Postgres connection...")
-		testDB, err := sqlx.Open(dbDriver, dbSource)
+	if err = pool.Retry(func() error {
+		fmt.Println("Checking Postgres connection...") //nolint:forbidigo // only for test
+		var testDB *sqlx.DB
+		testDB, err = sqlx.Open(dbDriver, dbSource)
 		if err != nil {
 			return err
 		}
@@ -162,7 +164,7 @@ func deployPostgres(pool *dockertest.Pool) (*dockertest.Resource, error) {
 
 		return testDB.Ping()
 	}); err != nil {
-		return nil, fmt.Errorf("could not connect to docker: %v", err)
+		return nil, fmt.Errorf("could not connect to docker: %w", err)
 	}
 
 	return resource, nil
@@ -202,14 +204,15 @@ func deployKafka(pool *dockertest.Pool) (*dockertest.Resource, error) {
 		}
 	})
 	if err != nil {
-		return nil, fmt.Errorf("could not start resource: %v", err)
+		return nil, fmt.Errorf("could not start resource: %w", err)
 	}
 
 	// Ensure the Kafka container is ready to accept connections.
-	if err := pool.Retry(func() error {
-		fmt.Println("Checking Kafka connection...")
+	if err = pool.Retry(func() error {
+		fmt.Println("Checking Kafka connection...") //nolint:forbidigo // only for test
 
-		conn, err := kafka.DialContext(context.Background(), "tcp", fmt.Sprintf("localhost:%s", resource.GetPort("9093/tcp")))
+		var conn *kafka.Conn
+		conn, err = kafka.DialContext(context.Background(), "tcp", "localhost:"+resource.GetPort("9093/tcp"))
 		if err != nil {
 			return err
 		}
@@ -222,7 +225,7 @@ func deployKafka(pool *dockertest.Pool) (*dockertest.Resource, error) {
 
 		return nil
 	}); err != nil {
-		return nil, fmt.Errorf("could not connect to docker: %v", err)
+		return nil, fmt.Errorf("could not connect to docker: %w", err)
 	}
 
 	return resource, nil
@@ -253,26 +256,26 @@ func deployZookeeper(pool *dockertest.Pool) (*dockertest.Resource, error) {
 		}
 	})
 	if err != nil {
-		return nil, fmt.Errorf("could not start resource: %v", err)
+		return nil, fmt.Errorf("could not start resource: %w", err)
 	}
 
-	fmt.Println("Checking Zookeeper connection...")
-	conn, _, err := zk.Connect([]string{fmt.Sprintf("127.0.0.1:%s", resource.GetPort("2181/tcp"))}, 10*time.Second)
+	fmt.Println("Checking Zookeeper connection...") //nolint:forbidigo // only for test
+	conn, _, err := zk.Connect([]string{"127.0.0.1:" + resource.GetPort("2181/tcp")}, sessionTimeout)
 	if err != nil {
 		log.Fatalf("could not connect zookeeper: %s", err)
 	}
 	defer conn.Close()
 
 	// Ensure the Zookeeper container is ready to accept connections.
-	if err := pool.Retry(func() error {
-		switch conn.State() {
+	if err = pool.Retry(func() error {
+		switch conn.State() { //nolint:exhaustive // used only for test
 		case zk.StateHasSession, zk.StateConnected:
 			return nil
 		default:
 			return errors.New("not yet connected")
 		}
 	}); err != nil {
-		return nil, fmt.Errorf("could not connect to docker: %v", err)
+		return nil, fmt.Errorf("could not connect to docker: %w", err)
 	}
 
 	return resource, nil
@@ -300,19 +303,19 @@ func deployRedis(pool *dockertest.Pool) (*dockertest.Resource, error) {
 		}
 	})
 	if err != nil {
-		return nil, fmt.Errorf("could not start resource: %v", err)
+		return nil, fmt.Errorf("could not start resource: %w", err)
 	}
 
 	// Ensure the Redis container is ready to accept connections.
-	if err := pool.Retry(func() error {
-		fmt.Println("Checking Redis connection...")
+	if err = pool.Retry(func() error {
+		fmt.Println("Checking Redis connection...") //nolint:forbidigo // only for test
 		db := redis.NewClient(&redis.Options{
 			Addr:     "localhost:6379",
 			Password: "",
 			DB:       0,
 		})
 
-		_, err := db.Ping(context.Background()).Result()
+		_, err = db.Ping(context.Background()).Result()
 		if err != nil {
 			return err
 		}
@@ -321,7 +324,7 @@ func deployRedis(pool *dockertest.Pool) (*dockertest.Resource, error) {
 
 		return nil
 	}); err != nil {
-		return nil, fmt.Errorf("could not connect to docker: %v", err)
+		return nil, fmt.Errorf("could not connect to docker: %w", err)
 	}
 
 	return resource, nil
@@ -351,27 +354,29 @@ func deployAPIContainer(pool *dockertest.Pool) (*dockertest.Resource, error) {
 		}
 	})
 	if err != nil {
-		return nil, fmt.Errorf("could not start resource: %v", err)
+		return nil, fmt.Errorf("could not start resource: %w", err)
 	}
 
 	// check if the API container is ready to accept connections
 	if err = pool.Retry(func() error {
-		fmt.Println("Checking API connection...")
-		_, err := http.Get("http://localhost:8080/healthz")
+		fmt.Println("Checking API connection...") //nolint:forbidigo // only for test
+
+		_, err = http.Get("http://localhost:8080/health")
 		if err != nil {
+			fmt.Printf("%s", err) //nolint:forbidigo // only for test
 			return err
 		}
 
 		return nil
 	}); err != nil {
-		return nil, fmt.Errorf("could not start resource: %v", err)
+		return nil, fmt.Errorf("could not start resource: %w", err)
 	}
 
 	return resource, nil
 }
 
 func applyDatabaseMigrations() error {
-	fmt.Println("Apply Postgres migration...")
+	fmt.Println("Apply Postgres migration...") //nolint:forbidigo // only for test
 	testDB, err := sqlx.Open(dbDriver, dbSource)
 	if err != nil {
 		return err
@@ -380,7 +385,7 @@ func applyDatabaseMigrations() error {
 
 	driver, err := postgres.WithInstance(testDB.DB, &postgres.Config{})
 	if err != nil {
-		return fmt.Errorf("Could not create migration driver: %w", err)
+		return fmt.Errorf("could not create migration driver: %w", err)
 	}
 
 	migration, err := migrate.NewWithDatabaseInstance(
@@ -389,11 +394,11 @@ func applyDatabaseMigrations() error {
 		driver,
 	)
 	if err != nil {
-		return fmt.Errorf("Failed to initialize migration instance: %w", err)
+		return fmt.Errorf("failed to initialize migration instance: %w", err)
 	}
 
-	if err := migration.Up(); err != nil && err != migrate.ErrNoChange {
-		return fmt.Errorf("Failed to apply migrations: %w", err)
+	if err = migration.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
+		return fmt.Errorf("failed to apply migrations: %w", err)
 	}
 
 	log.Println("Postgres migrations applied successfully")
@@ -402,7 +407,7 @@ func applyDatabaseMigrations() error {
 }
 
 func applyDatabaseSeed() error {
-	fmt.Println("Apply Postgres seed...")
+	fmt.Println("Apply Postgres seed...") //nolint:forbidigo // only for test
 	testDB, err := sqlx.Open(dbDriver, dbSource)
 	if err != nil {
 		return err
@@ -413,7 +418,7 @@ func applyDatabaseSeed() error {
 		MigrationsTable: "seed",
 	})
 	if err != nil {
-		return fmt.Errorf("Could not create migration driver: %w", err)
+		return fmt.Errorf("could not create migration driver: %w", err)
 	}
 
 	migration, err := migrate.NewWithDatabaseInstance(
@@ -422,11 +427,11 @@ func applyDatabaseSeed() error {
 		driver,
 	)
 	if err != nil {
-		return fmt.Errorf("Failed to initialize migration instance: %w", err)
+		return fmt.Errorf("failed to initialize migration instance: %w", err)
 	}
 
-	if err := migration.Up(); err != nil && err != migrate.ErrNoChange {
-		return fmt.Errorf("Failed to apply postgres seed: %w", err)
+	if err = migration.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
+		return fmt.Errorf("failed to apply postgres seed: %w", err)
 	}
 
 	log.Println("Database seed applied successfully")
@@ -438,12 +443,12 @@ func applyDatabaseSeed() error {
 func tearDown(pool *dockertest.Pool, resources []*dockertest.Resource) error {
 	for _, resource := range resources {
 		if err := pool.Purge(resource); err != nil {
-			return fmt.Errorf("could not purge resource: %v", err)
+			return fmt.Errorf("could not purge resource: %w", err)
 		}
 	}
 
 	if err := pool.RemoveNetwork(network); err != nil {
-		return fmt.Errorf("could not remove network: %v", err)
+		return fmt.Errorf("could not remove network: %w", err)
 	}
 
 	return nil

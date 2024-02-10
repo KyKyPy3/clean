@@ -1,4 +1,4 @@
-package value_object
+package vo
 
 import (
 	"errors"
@@ -10,7 +10,7 @@ var (
 	ErrEmptyFirstName = errors.New("firstName cannot be empty")
 )
 
-// FullName is a value object representing first, last and middle names
+// FullName is a value object representing first, last and middle names.
 type FullName struct {
 	firstName  string
 	lastName   string

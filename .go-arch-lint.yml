@@ -1,0 +1,23 @@
+version: 3
+workdir: internal
+
+excludeFiles:
+  - "^.*_test\\.go$"
+  - "^.*\/test\/.*$"
+
+components:
+  handler:    { in: modules/*/infrastructure/controller/*/v1 }
+  service:    { in: modules/*/application/* }
+  repository: { in: modules/*/infrastructure/gateway/* }
+  models:      { in: modules/*/domain }
+
+commonComponents:
+  - models
+
+deps:
+  handler:
+    mayDependOn:
+      - service
+  service:
+    mayDependOn:
+      - repository

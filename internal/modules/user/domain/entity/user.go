@@ -11,16 +11,18 @@ import (
 	"github.com/KyKyPy3/clean/internal/domain/core"
 	"github.com/KyKyPy3/clean/internal/modules/user/domain"
 	"github.com/KyKyPy3/clean/internal/modules/user/domain/event"
-	"github.com/KyKyPy3/clean/internal/modules/user/domain/value_object"
+	"github.com/KyKyPy3/clean/internal/modules/user/domain/vo"
 	"github.com/KyKyPy3/clean/pkg/mediator"
 )
 
-// User struct
+const passwordCost = 10
+
+// User struct.
 type User struct {
 	*core.BaseAggregateRoot
 
 	id        common.UID
-	fullName  value_object.FullName
+	fullName  vo.FullName
 	email     common.Email
 	password  string
 	createdAt time.Time
@@ -29,7 +31,7 @@ type User struct {
 
 // NewUser - creates a new User instance with the provided username, password, and email.
 func NewUser(
-	fullName value_object.FullName,
+	fullName vo.FullName,
 	email common.Email,
 	password string,
 	uniqPolicy domain.UniqueEmailPolicy,
@@ -66,7 +68,7 @@ func NewUser(
 
 func Hydrate(
 	id common.UID,
-	fullName value_object.FullName,
+	fullName vo.FullName,
 	email common.Email,
 	password string,
 	createdAt time.Time,
@@ -94,12 +96,12 @@ func (u *User) IsEmpty() bool {
 }
 
 // FullName returns the fullname of the user.
-func (u *User) FullName() value_object.FullName {
+func (u *User) FullName() vo.FullName {
 	return u.fullName
 }
 
 // UpdateFullName set the fullname of the user.
-func (u *User) UpdateFullName(fullName value_object.FullName) {
+func (u *User) UpdateFullName(fullName vo.FullName) {
 	u.fullName = fullName
 }
 
@@ -136,9 +138,9 @@ func (u *User) UpdatePassword(password string) error {
 	return u.hashPassword()
 }
 
-// hashPassword hash user password
+// hashPassword hash user password.
 func (u *User) hashPassword() error {
-	hash, err := bcrypt.GenerateFromPassword([]byte(u.password), 10)
+	hash, err := bcrypt.GenerateFromPassword([]byte(u.password), passwordCost)
 	if err != nil {
 		return err
 	}
@@ -156,7 +158,7 @@ func (u *User) UpdatedAt() time.Time {
 	return u.updatedAt
 }
 
-// ValidatePassword compare provided password with stored
+// ValidatePassword compare provided password with stored.
 func (u *User) ValidatePassword(password string) error {
 	err := bcrypt.CompareHashAndPassword([]byte(u.password), []byte(password))
 	if err != nil {

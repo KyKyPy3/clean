@@ -10,7 +10,7 @@ import (
 	"github.com/KyKyPy3/clean/internal/domain/common"
 	"github.com/KyKyPy3/clean/internal/domain/core"
 	"github.com/KyKyPy3/clean/internal/modules/user/domain/entity"
-	"github.com/KyKyPy3/clean/internal/modules/user/domain/value_object"
+	"github.com/KyKyPy3/clean/internal/modules/user/domain/vo"
 )
 
 func TestFetch(t *testing.T) {
@@ -20,7 +20,7 @@ func TestFetch(t *testing.T) {
 }
 
 func TestCreate(t *testing.T) {
-	fullName, _ := value_object.NewFullName("Bob", "Smith", "Joseph")
+	fullName, _ := vo.NewFullName("Bob", "Smith", "Joseph")
 	email, _ := common.NewEmail("bob@email.com")
 
 	user, _ := entity.NewUser(fullName, email, "12345", policy)
@@ -31,12 +31,18 @@ func TestCreate(t *testing.T) {
 }
 
 func TestGetByID(t *testing.T) {
-	user, err := repo.GetByID(context.Background(), common.NewWithSpecifiedID(uuid.MustParse("2b0c8791-2136-46b6-bc38-b33038ca2e80")))
+	user, err := repo.GetByID(
+		context.Background(),
+		common.NewWithSpecifiedID(uuid.MustParse("2b0c8791-2136-46b6-bc38-b33038ca2e80")),
+	)
 	require.NoError(t, err)
 	require.NotNil(t, user)
 
-	user, err = repo.GetByID(context.Background(), common.NewWithSpecifiedID(uuid.MustParse("2b0c1111-2136-46b6-bc38-b33038ca2e80")))
-	require.NotNil(t, err)
+	user, err = repo.GetByID(
+		context.Background(),
+		common.NewWithSpecifiedID(uuid.MustParse("2b0c1111-2136-46b6-bc38-b33038ca2e80")),
+	)
+	require.Error(t, err)
 	require.ErrorIs(t, err, core.ErrNotFound)
 	require.Equal(t, entity.User{}, user)
 }
@@ -49,12 +55,15 @@ func TestGetByEmail(t *testing.T) {
 
 	bobEmail, _ := common.NewEmail("rob@email.com")
 	user, err = repo.GetByEmail(context.Background(), bobEmail)
-	require.NotNil(t, err)
+	require.Error(t, err)
 	require.ErrorIs(t, err, core.ErrNotFound)
 	require.Equal(t, entity.User{}, user)
 }
 
 func TestDelete(t *testing.T) {
-	err := repo.Delete(context.Background(), common.NewWithSpecifiedID(uuid.MustParse("2b0c8791-2136-46b6-bc38-b33038ca2e80")))
+	err := repo.Delete(
+		context.Background(),
+		common.NewWithSpecifiedID(uuid.MustParse("2b0c8791-2136-46b6-bc38-b33038ca2e80")),
+	)
 	require.NoError(t, err)
 }

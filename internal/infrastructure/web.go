@@ -18,7 +18,8 @@ import (
 )
 
 const (
-	maxHeaderBytes = 1 << 20
+	maxHeaderBytes  = 1 << 20
+	shutdownTimeout = 10 * time.Second
 )
 
 type CustomValidator struct {
@@ -60,8 +61,8 @@ func (w *Web) Start() error {
 	// Run the server
 	server := &http.Server{
 		Addr:           fmt.Sprintf("%s:%s", w.cfg.Server.Host, w.cfg.Server.Port),
-		ReadTimeout:    time.Second * w.cfg.Server.ReadTimeout,
-		WriteTimeout:   time.Second * w.cfg.Server.WriteTimeout,
+		ReadTimeout:    w.cfg.Server.ReadTimeout,
+		WriteTimeout:   w.cfg.Server.WriteTimeout,
 		MaxHeaderBytes: maxHeaderBytes,
 	}
 
@@ -85,7 +86,7 @@ func (w *Web) mountPoint() *echo.Group {
 }
 
 func (w *Web) Shutdown() error {
-	c, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	c, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 	defer cancel()
 	if err := w.echo.Shutdown(c); err != nil {
 		return err

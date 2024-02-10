@@ -2,11 +2,14 @@ package jwt
 
 import (
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/golang-jwt/jwt"
 )
+
+var errInvalidToken = errors.New("invalid token")
 
 type JWT struct {
 	privateKey []byte
@@ -80,7 +83,7 @@ func (j JWT) ValidateToken(token string) (*Token, error) {
 	}
 	claims, ok := parsedToken.Claims.(jwt.MapClaims)
 	if !ok || !parsedToken.Valid {
-		return nil, fmt.Errorf("validate: invalid token")
+		return nil, errInvalidToken
 	}
 
 	return &Token{

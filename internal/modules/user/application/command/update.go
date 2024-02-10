@@ -9,7 +9,8 @@ import (
 	"github.com/KyKyPy3/clean/internal/domain/common"
 	domain_core "github.com/KyKyPy3/clean/internal/domain/core"
 	"github.com/KyKyPy3/clean/internal/modules/user/application/ports"
-	"github.com/KyKyPy3/clean/internal/modules/user/domain/value_object"
+	"github.com/KyKyPy3/clean/internal/modules/user/domain/entity"
+	"github.com/KyKyPy3/clean/internal/modules/user/domain/vo"
 	"github.com/KyKyPy3/clean/pkg/logger"
 )
 
@@ -64,7 +65,7 @@ func (c UpdateUser) Handle(ctx context.Context, command core.Command) (any, erro
 		return nil, err
 	}
 
-	fullname, err := value_object.NewFullName(updateCommand.Name, updateCommand.Surname, updateCommand.Middlename)
+	fullname, err := vo.NewFullName(updateCommand.Name, updateCommand.Surname, updateCommand.Middlename)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +78,8 @@ func (c UpdateUser) Handle(ctx context.Context, command core.Command) (any, erro
 	// TOFIX: add check for email uniq
 
 	err = c.manager.Do(ctx, func(ctx context.Context) error {
-		user, err := c.storage.GetByID(ctx, id)
+		var user entity.User
+		user, err = c.storage.GetByID(ctx, id)
 		if err != nil && !errors.Is(err, domain_core.ErrNotFound) {
 			return err
 		}
@@ -108,7 +110,8 @@ func (c UpdateUser) Handle(ctx context.Context, command core.Command) (any, erro
 		return nil, err
 	}
 
-	return nil, nil
+	var res interface{}
+	return res, nil
 }
 
 var _ core.CommandHandler = (*UpdateUser)(nil)

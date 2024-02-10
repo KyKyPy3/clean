@@ -19,8 +19,8 @@ type CommandBus interface {
 }
 
 type RegistrationEvent struct {
-	ID    string
-	Email string
+	ID    string `json:"id"`
+	Email string `json:"email"`
 }
 
 type RegistrationEvents struct {

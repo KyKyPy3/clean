@@ -16,6 +16,8 @@ import (
 	"github.com/KyKyPy3/clean/pkg/logger"
 )
 
+const pageSize = 50
+
 type Publisher interface {
 	Publish(ctx context.Context, event Message) error
 }
@@ -35,7 +37,7 @@ type Options struct {
 }
 
 type outbox struct {
-	Id       int64
+	ID       int64
 	Topic    string
 	Kind     string
 	Payload  []byte
@@ -50,7 +52,13 @@ type Manager struct {
 	publisher Publisher
 }
 
-func New(cfg *config.Config, db *sqlx.DB, publisher Publisher, getter *trmsqlx.CtxGetter, logger logger.Logger) Manager {
+func New(
+	cfg *config.Config,
+	db *sqlx.DB,
+	publisher Publisher,
+	getter *trmsqlx.CtxGetter,
+	logger logger.Logger,
+) Manager {
 	return Manager{
 		db:        db,
 		getter:    getter,
@@ -60,18 +68,21 @@ func New(cfg *config.Config, db *sqlx.DB, publisher Publisher, getter *trmsqlx.C
 	}
 }
 
-func (m Manager) Publish(ctx context.Context, topic string, event Event) error {
+func (m *Manager) Publish(ctx context.Context, topic string, event Event) error {
 	e, err := json.Marshal(event)
 	if err != nil {
 		return err
 	}
 
-	stmt, err := m.getter.DefaultTrOrDB(ctx, m.db).PreparexContext(ctx, "INSERT INTO outbox (topic, kind, payload) VALUES ($1, $2, $3)")
+	stmt, err := m.getter.DefaultTrOrDB(ctx, m.db).PreparexContext(
+		ctx,
+		"INSERT INTO outbox (topic, kind, payload) VALUES ($1, $2, $3)",
+	)
 	if err != nil {
 		return err
 	}
 	defer func() {
-		err := stmt.Close()
+		err = stmt.Close()
 		if err != nil {
 			m.logger.Errorf("can't close create statement, err: %w", err)
 		}
@@ -85,7 +96,7 @@ func (m Manager) Publish(ctx context.Context, topic string, event Event) error {
 	return nil
 }
 
-func (m Manager) Start(ctx context.Context, lock *latch.CountDownLatch, options Options) {
+func (m *Manager) Start(ctx context.Context, lock *latch.CountDownLatch, options Options) {
 	lock.Add(1)
 
 	go func() {
@@ -109,7 +120,10 @@ func (m Manager) Start(ctx context.Context, lock *latch.CountDownLatch, options 
 	}()
 }
 
-func (m Manager) Consume(ctx context.Context) error {
+// TOFIX: refactor function.
+//
+//nolint:gocognit // Need refactor
+func (m *Manager) Consume(ctx context.Context) error {
 	var outboxes []outbox
 
 	tx, err := m.db.Beginx()
@@ -150,14 +164,14 @@ func (m Manager) Consume(ctx context.Context) error {
 		ctx,
 		&outboxes,
 		`SELECT * FROM outbox WHERE consumed=FALSE ORDER BY id ASC LIMIT $1`,
-		50,
+		pageSize,
 	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil
-		} else {
-			return err
 		}
+
+		return err
 	}
 
 	if len(outboxes) == 0 {
@@ -168,7 +182,7 @@ func (m Manager) Consume(ctx context.Context) error {
 
 	ids := make([]int64, len(outboxes))
 	for k, message := range outboxes {
-		err := m.publisher.Publish(ctx, Message{
+		err = m.publisher.Publish(ctx, Message{
 			Topic:   message.Topic,
 			Kind:    message.Kind,
 			Payload: message.Payload,
@@ -177,7 +191,7 @@ func (m Manager) Consume(ctx context.Context) error {
 			continue
 		}
 
-		ids[k] = message.Id
+		ids[k] = message.ID
 	}
 	query, args, err := sqlx.In("UPDATE outbox SET consumed=TRUE WHERE id IN(?)", ids)
 	if err != nil {
@@ -192,7 +206,7 @@ func (m Manager) Consume(ctx context.Context) error {
 	return nil
 }
 
-func (m Manager) getLock(ctx context.Context, tx *sqlx.Tx) (bool, error) {
+func (m *Manager) getLock(ctx context.Context, tx *sqlx.Tx) (bool, error) {
 	ok := false
 	err := tx.GetContext(ctx, &ok, "SELECT pg_try_advisory_xact_lock(123)")
 	if err != nil {

@@ -1,7 +1,10 @@
-package value_object
+package vo_test
 
 import (
+	"errors"
 	"testing"
+
+	"github.com/KyKyPy3/clean/internal/modules/user/domain/vo"
 )
 
 func TestFullName_NewFullName(t *testing.T) {
@@ -21,7 +24,7 @@ func TestFullName_NewFullName(t *testing.T) {
 			firstName:   "",
 			lastName:    "Smith",
 			middleName:  "Sr",
-			expectedErr: ErrEmptyFirstName,
+			expectedErr: vo.ErrEmptyFirstName,
 		}, {
 			test:        "Empty last name validation",
 			firstName:   "John",
@@ -29,7 +32,7 @@ func TestFullName_NewFullName(t *testing.T) {
 			middleName:  "Sr",
 			expectedErr: nil,
 		}, {
-			test:        "Valid fullanme",
+			test:        "Valid fullname",
 			firstName:   "John",
 			lastName:    "Smith",
 			middleName:  "Sr",
@@ -41,12 +44,11 @@ func TestFullName_NewFullName(t *testing.T) {
 		// Run Tests
 		t.Run(tc.test, func(t *testing.T) {
 			// Create a new email
-			_, err := NewFullName(tc.firstName, tc.lastName, tc.middleName)
+			_, err := vo.NewFullName(tc.firstName, tc.lastName, tc.middleName)
 			// Check if the error matches the expected error
-			if err != tc.expectedErr {
+			if !errors.Is(err, tc.expectedErr) {
 				t.Errorf("Expected error %v, got %v", tc.expectedErr, err)
 			}
-
 		})
 	}
 }

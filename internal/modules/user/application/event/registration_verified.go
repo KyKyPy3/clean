@@ -3,12 +3,12 @@ package event
 import (
 	"context"
 	"fmt"
-	"github.com/KyKyPy3/clean/internal/modules/user/domain/value_object"
 	"strings"
 
 	"github.com/KyKyPy3/clean/internal/modules/registration/domain/event"
 	"github.com/KyKyPy3/clean/internal/modules/user/application/ports"
 	"github.com/KyKyPy3/clean/internal/modules/user/domain/entity"
+	"github.com/KyKyPy3/clean/internal/modules/user/domain/vo"
 	"github.com/KyKyPy3/clean/pkg/logger"
 	"github.com/KyKyPy3/clean/pkg/mediator"
 )
@@ -19,7 +19,11 @@ type RegistrationVerified struct {
 	logger  logger.Logger
 }
 
-func NewRegistrationVerified(logger logger.Logger, storage ports.UserPgStorage, policy ports.UniquenessPolicer) *RegistrationVerified {
+func NewRegistrationVerified(
+	logger logger.Logger,
+	storage ports.UserPgStorage,
+	policy ports.UniquenessPolicer,
+) *RegistrationVerified {
 	return &RegistrationVerified{
 		storage: storage,
 		policy:  policy,
@@ -32,14 +36,14 @@ func (r *RegistrationVerified) Handle(ctx context.Context, e mediator.Event) err
 	case event.RegistrationVerifiedEvent:
 		return r.handleEmailVerified(ctx, t)
 	default:
-		return fmt.Errorf("Unknown type of event %T", e)
+		return fmt.Errorf("unknown type of event %T", e)
 	}
 }
 
-func (r RegistrationVerified) handleEmailVerified(ctx context.Context, e event.RegistrationVerifiedEvent) error {
+func (r *RegistrationVerified) handleEmailVerified(ctx context.Context, e event.RegistrationVerifiedEvent) error {
 	r.logger.Debugf("Get email verified event")
 
-	fullName, err := value_object.NewFullName(strings.Split(e.Email.String(), "@")[0], "", "")
+	fullName, err := vo.NewFullName(strings.Split(e.Email.String(), "@")[0], "", "")
 	if err != nil {
 		return err
 	}

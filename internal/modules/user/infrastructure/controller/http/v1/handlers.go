@@ -1,3 +1,4 @@
+//nolint:godot // file has comments for swagger doc
 package v1
 
 import (
@@ -13,7 +14,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/KyKyPy3/clean/internal/application/core"
-	common_http "github.com/KyKyPy3/clean/internal/infrastructure/controller/http"
 	http_dto "github.com/KyKyPy3/clean/internal/infrastructure/controller/http"
 	"github.com/KyKyPy3/clean/internal/modules/user/application/command"
 	"github.com/KyKyPy3/clean/internal/modules/user/application/query"
@@ -22,7 +22,10 @@ import (
 	"github.com/KyKyPy3/clean/pkg/logger"
 )
 
-const requestTimeout = 10 * time.Second
+const (
+	requestTimeout  = 10 * time.Second
+	defaultPageSize = 50
+)
 
 type CommandBus interface {
 	Dispatch(context.Context, core.Command) (any, error)
@@ -65,9 +68,9 @@ func (h *UserHandlers) Fetch(c echo.Context) error {
 	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
 	defer cancel()
 
-	var errorList []*common_http.ValidationError
+	var errorList []*http_dto.ValidationError
 	opts := dto.FetchUsersDTO{
-		Limit:  50,
+		Limit:  defaultPageSize,
 		Offset: 0,
 	}
 
@@ -81,7 +84,7 @@ func (h *UserHandlers) Fetch(c echo.Context) error {
 		for _, err := range errs {
 			var bindingError *echo.BindingError
 			if errors.As(err, &bindingError) {
-				errorList = append(errorList, &common_http.ValidationError{
+				errorList = append(errorList, &http_dto.ValidationError{
 					Field:  bindingError.Field,
 					Value:  bindingError.Values,
 					Reason: "parse",
@@ -93,7 +96,7 @@ func (h *UserHandlers) Fetch(c echo.Context) error {
 
 		return c.JSON(
 			http.StatusBadRequest,
-			common_http.ResponseDTO{
+			http_dto.ResponseDTO{
 				Status:  http.StatusBadRequest,
 				Message: "error",
 				Errors:  errorList,
@@ -102,9 +105,10 @@ func (h *UserHandlers) Fetch(c echo.Context) error {
 	}
 
 	err := c.Validate(opts)
-	if validationErrors, ok := err.(validator.ValidationErrors); ok {
+	var validationErrors validator.ValidationErrors
+	if errors.As(err, &validationErrors) {
 		for _, e := range validationErrors {
-			errorList = append(errorList, &common_http.ValidationError{
+			errorList = append(errorList, &http_dto.ValidationError{
 				Field:  e.Field(),
 				Value:  e.Value(),
 				Reason: e.Tag(),
@@ -113,7 +117,7 @@ func (h *UserHandlers) Fetch(c echo.Context) error {
 
 		return c.JSON(
 			http.StatusBadRequest,
-			common_http.ResponseDTO{
+			http_dto.ResponseDTO{
 				Status:  http.StatusBadRequest,
 				Message: "error",
 				Errors:  errorList,
@@ -129,7 +133,7 @@ func (h *UserHandlers) Fetch(c echo.Context) error {
 	if err != nil {
 		return c.JSON(
 			http.StatusInternalServerError,
-			common_http.ResponseDTO{
+			http_dto.ResponseDTO{
 				Status:  http.StatusInternalServerError,
 				Message: "error",
 				Error:   err.Error(),
@@ -145,7 +149,7 @@ func (h *UserHandlers) Fetch(c echo.Context) error {
 
 	return c.JSON(
 		http.StatusOK,
-		common_http.ResponseDTO{
+		http_dto.ResponseDTO{
 			Status:  http.StatusOK,
 			Message: "success",
 			Data: map[string]interface{}{
@@ -167,7 +171,7 @@ func (h *UserHandlers) Update(c echo.Context) error {
 	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
 	defer cancel()
 
-	var errorList []*common_http.ValidationError
+	var errorList []*http_dto.ValidationError
 	params := dto.UpdateUserDTO{}
 
 	// Parse given params
@@ -183,7 +187,7 @@ func (h *UserHandlers) Update(c echo.Context) error {
 
 		return c.JSON(
 			http.StatusBadRequest,
-			common_http.ResponseDTO{
+			http_dto.ResponseDTO{
 				Status:  http.StatusBadRequest,
 				Message: "error",
 				Error:   validationErr,
@@ -192,9 +196,10 @@ func (h *UserHandlers) Update(c echo.Context) error {
 	}
 
 	err = c.Validate(params)
-	if validationErrors, ok := err.(validator.ValidationErrors); ok {
+	var validationErrors validator.ValidationErrors
+	if errors.As(err, &validationErrors) {
 		for _, e := range validationErrors {
-			errorList = append(errorList, &common_http.ValidationError{
+			errorList = append(errorList, &http_dto.ValidationError{
 				Field:  e.Field(),
 				Value:  e.Value(),
 				Reason: e.Tag(),
@@ -203,7 +208,7 @@ func (h *UserHandlers) Update(c echo.Context) error {
 
 		return c.JSON(
 			http.StatusBadRequest,
-			common_http.ResponseDTO{
+			http_dto.ResponseDTO{
 				Status:  http.StatusBadRequest,
 				Message: "error",
 				Errors:  errorList,
@@ -222,11 +227,11 @@ func (h *UserHandlers) Update(c echo.Context) error {
 
 	_, err = h.Commands.Dispatch(ctx, cmd)
 	if err != nil {
-		h.Logger.Errorf("Failed to update user %w", err)
+		h.Logger.Errorf("Failed to update user %v", err)
 
 		return c.JSON(
 			http.StatusInternalServerError,
-			common_http.ResponseDTO{
+			http_dto.ResponseDTO{
 				Status:  http.StatusInternalServerError,
 				Message: "error",
 				Error:   err.Error(),
@@ -236,7 +241,7 @@ func (h *UserHandlers) Update(c echo.Context) error {
 
 	return c.JSON(
 		http.StatusOK,
-		common_http.ResponseDTO{
+		http_dto.ResponseDTO{
 			Status:  http.StatusOK,
 			Message: "success",
 		},
@@ -268,7 +273,7 @@ func (h *UserHandlers) GetByID(c echo.Context) error {
 	}
 	user, err := h.Queries.Ask(ctx, q)
 	if err != nil {
-		h.Logger.Errorf("Failed to get user by id %w", err)
+		h.Logger.Errorf("Failed to get user by id %v", err)
 
 		return c.JSON(
 			http.StatusInternalServerError,
@@ -282,7 +287,7 @@ func (h *UserHandlers) GetByID(c echo.Context) error {
 
 	return c.JSON(
 		http.StatusOK,
-		common_http.ResponseDTO{
+		http_dto.ResponseDTO{
 			Status:  http.StatusOK,
 			Message: "success",
 			Data:    dto.UserToResponse(user.(entity.User)),

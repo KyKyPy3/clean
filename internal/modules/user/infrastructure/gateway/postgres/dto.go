@@ -5,11 +5,11 @@ import (
 
 	"github.com/KyKyPy3/clean/internal/domain/common"
 	"github.com/KyKyPy3/clean/internal/modules/user/domain/entity"
-	"github.com/KyKyPy3/clean/internal/modules/user/domain/value_object"
+	"github.com/KyKyPy3/clean/internal/modules/user/domain/vo"
 )
 
-// DbUser Database user representation
-type DbUser struct {
+// DBUser Database user representation.
+type DBUser struct {
 	ID         string    `db:"id"`
 	Name       string    `db:"name"`
 	Surname    string    `db:"surname"`
@@ -20,8 +20,8 @@ type DbUser struct {
 	UpdatedAt  time.Time `db:"updated_at"`
 }
 
-// UserFromDB Convert database user model to domain model
-func UserFromDB(dbUser DbUser) (entity.User, error) {
+// UserFromDB Convert database user model to domain model.
+func UserFromDB(dbUser DBUser) (entity.User, error) {
 	entityID, err := common.ParseUID(dbUser.ID)
 	if err != nil {
 		return entity.User{}, err
@@ -32,7 +32,7 @@ func UserFromDB(dbUser DbUser) (entity.User, error) {
 		return entity.User{}, err
 	}
 
-	fullName, err := value_object.NewFullName(dbUser.Name, dbUser.Surname, dbUser.Middlename)
+	fullName, err := vo.NewFullName(dbUser.Name, dbUser.Surname, dbUser.Middlename)
 	if err != nil {
 		return entity.User{}, err
 	}
@@ -42,9 +42,9 @@ func UserFromDB(dbUser DbUser) (entity.User, error) {
 	return user, nil
 }
 
-// UserToDB Convert domain user model to database model
-func UserToDB(user entity.User) DbUser {
-	return DbUser{
+// UserToDB Convert domain user model to database model.
+func UserToDB(user entity.User) DBUser {
+	return DBUser{
 		ID:         user.ID().String(),
 		Name:       user.FullName().FirstName(),
 		Surname:    user.FullName().LastName(),

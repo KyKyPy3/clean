@@ -10,11 +10,15 @@ import (
 	"github.com/KyKyPy3/clean/pkg/outbox"
 )
 
+type Queue interface {
+	Publish(ctx context.Context, event outbox.Message) error
+}
+
 type queue struct {
 	producer kafkaClient.Producer
 }
 
-func NewQueue(producer kafkaClient.Producer) *queue {
+func NewQueue(producer kafkaClient.Producer) Queue {
 	return &queue{
 		producer: producer,
 	}

@@ -12,6 +12,8 @@ import (
 	"github.com/KyKyPy3/clean/pkg/logger"
 )
 
+const poolSize = 5
+
 type EventHandler func(ctx context.Context, event *kafka.Message) error
 
 type Consumer struct {
@@ -31,6 +33,9 @@ func NewConsumer(cfg *config.Config, lock *latch.CountDownLatch, logger logger.L
 	}
 }
 
+// TOFIX: Refactor function.
+//
+//nolint:gocognit // Can't make it simpler
 func (c *Consumer) Start(ctx context.Context) error {
 	kafkaConsumer := kafkaClient.NewConsumer(c.cfg.Kafka.Brokers, c.cfg.Kafka.GroupID, c.logger)
 
@@ -41,7 +46,7 @@ func (c *Consumer) Start(ctx context.Context) error {
 		err := kafkaConsumer.ConsumeTopic(
 			ctx,
 			[]string{"registration"},
-			5,
+			poolSize,
 			func(ctx context.Context, r *kafka.Reader, workerID int) error {
 				for {
 					select {
@@ -67,7 +72,7 @@ func (c *Consumer) Start(ctx context.Context) error {
 						c.logger.Errorf("(kafkaConsumer ConsumeTopic) can't process event, err: %v", err)
 					}
 
-					if err := r.CommitMessages(ctx, msg); err != nil {
+					if err = r.CommitMessages(ctx, msg); err != nil {
 						c.logger.Errorf("failed to commit messages: %v", err)
 					}
 				}

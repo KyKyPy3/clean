@@ -22,8 +22,8 @@ const (
 	ConsoleEncoder  = "console"
 )
 
-// For mapping config logger to app logger levels
-var loggerLevelMap = map[string]zapcore.Level{
+// For mapping config logger to app logger levels.
+var loggerLevelMap = map[string]zapcore.Level{ //nolint:gochecknoglobals // log levels
 	"debug":  zapcore.DebugLevel,
 	"info":   zapcore.InfoLevel,
 	"warn":   zapcore.WarnLevel,
@@ -33,7 +33,7 @@ var loggerLevelMap = map[string]zapcore.Level{
 	"fatal":  zapcore.FatalLevel,
 }
 
-// Logger interface
+// Logger interface.
 type Logger interface {
 	Init()
 	Debug(args ...interface{})
@@ -55,7 +55,7 @@ type logger struct {
 	sugarLogger *zap.SugaredLogger
 }
 
-func NewLogger(cfg Config) *logger {
+func NewLogger(cfg Config) Logger {
 	return &logger{cfg: cfg}
 }
 
@@ -144,5 +144,5 @@ func (l *logger) DPanic(args ...interface{}) {
 }
 
 func (l *logger) DPanicf(template string, args ...interface{}) {
-	l.sugarLogger.DPanicf(template, args)
+	l.sugarLogger.DPanicf(template, args...)
 }

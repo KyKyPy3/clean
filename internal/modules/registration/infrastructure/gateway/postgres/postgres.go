@@ -23,7 +23,11 @@ type registrationPgStorage struct {
 	getter *trmsqlx.CtxGetter
 }
 
-func NewRegistrationPgStorage(db *sqlx.DB, getter *trmsqlx.CtxGetter, logger logger.Logger) ports.RegistrationPgStorage {
+func NewRegistrationPgStorage(
+	db *sqlx.DB,
+	getter *trmsqlx.CtxGetter,
+	logger logger.Logger,
+) ports.RegistrationPgStorage {
 	return &registrationPgStorage{
 		db:     db,
 		logger: logger,
@@ -32,7 +36,7 @@ func NewRegistrationPgStorage(db *sqlx.DB, getter *trmsqlx.CtxGetter, logger log
 	}
 }
 
-// Create new registration
+// Create new registration.
 func (r *registrationPgStorage) Create(ctx context.Context, d entity.Registration) error {
 	ctx, span := r.tracer.Start(ctx, "registrationPgStorage.Create")
 	defer span.End()
@@ -42,16 +46,16 @@ func (r *registrationPgStorage) Create(ctx context.Context, d entity.Registratio
 		return errors.Wrap(err, "[registrationPgStorage.Create] PreparexContext")
 	}
 	defer func() {
-		err := stmt.Close()
+		err = stmt.Close()
 		if err != nil {
-			r.logger.Errorf("[registrationPgStorage.Create] can't close create statement, err: %w", err)
+			r.logger.Errorf("[registrationPgStorage.Create] can't close create statement, err: %v", err)
 		}
 	}()
 
 	registration := RegistrationToDB(d)
 	r.logger.Debugf("[registrationPgStorage.Create] Save registration %v", registration)
 
-	if _, err := stmt.ExecContext(
+	if _, err = stmt.ExecContext(
 		ctx,
 		registration.ID,
 		registration.Email,
@@ -72,16 +76,16 @@ func (r *registrationPgStorage) Update(ctx context.Context, d entity.Registratio
 		return errors.Wrap(err, "[registrationPgStorage.Update] PreparexContext")
 	}
 	defer func() {
-		err := stmt.Close()
+		err = stmt.Close()
 		if err != nil {
-			r.logger.Errorf("[registrationPgStorage.Update] can't close create statement, err: %w", err)
+			r.logger.Errorf("[registrationPgStorage.Update] can't close create statement, err: %v", err)
 		}
 	}()
 
 	registration := RegistrationToDB(d)
 	r.logger.Debugf("[registrationPgStorage.Update] Save registration %v", registration)
 
-	if _, err := stmt.ExecContext(
+	if _, err = stmt.ExecContext(
 		ctx,
 		registration.ID,
 		true,
@@ -101,22 +105,22 @@ func (r *registrationPgStorage) GetByID(ctx context.Context, id common.UID) (ent
 		return entity.Registration{}, errors.Wrap(err, "[registrationPgStorage.GetByID] PreparexContext")
 	}
 	defer func() {
-		err := stmt.Close()
+		err = stmt.Close()
 		if err != nil {
-			r.logger.Errorf("[registrationPgStorage.GetByID] can't close statement, err: %w", err)
+			r.logger.Errorf("[registrationPgStorage.GetByID] can't close statement, err: %v", err)
 		}
 	}()
 
 	rows, err := stmt.QueryxContext(ctx, id.String())
-	if err != nil {
-		r.logger.Errorf("[registrationPgStorage.GetByID] Can't fetch registration by id, err: %w", err)
+	if err != nil || rows.Err() != nil {
+		r.logger.Errorf("[registrationPgStorage.GetByID] Can't fetch registration by id, err: %v", err)
 		return entity.Registration{}, errors.Wrap(err, "[registrationPgStorage.GetByID] QueryxContext")
 	}
 
 	defer func() {
 		errRow := rows.Close()
 		if errRow != nil {
-			r.logger.Errorf("[registrationPgStorage.GetByID] Can't close fetched registration rows, err: %w", errRow)
+			r.logger.Errorf("[registrationPgStorage.GetByID] Can't close fetched registration rows, err: %v", errRow)
 		}
 	}()
 
@@ -126,13 +130,14 @@ func (r *registrationPgStorage) GetByID(ctx context.Context, id common.UID) (ent
 
 		err = rows.StructScan(&registration)
 		if err != nil {
-			r.logger.Errorf("[registrationPgStorage.GetByID] Can't scan registration data. err: %w", err)
+			r.logger.Errorf("[registrationPgStorage.GetByID] Can't scan registration data. err: %v", err)
 			return entity.Registration{}, errors.Wrap(err, "[registrationPgStorage.GetByID] StructScan")
 		}
 
-		registrationEntity, err := RegistrationFromDB(registration)
+		var registrationEntity entity.Registration
+		registrationEntity, err = RegistrationFromDB(registration)
 		if err != nil {
-			r.logger.Errorf("[registrationPgStorage.GetByID] Can't convert registration data to domain entity. err: %w", err)
+			r.logger.Errorf("[registrationPgStorage.GetByID] Can't convert registration data to domain entity. err: %v", err)
 			return entity.Registration{}, errors.Wrap(err, "[registrationPgStorage.GetByID] RegistrationFromDB")
 		}
 

@@ -4,20 +4,20 @@ import _ "embed"
 
 var (
 	//go:embed query/fetch.sql
-	fetchSQL string
+	FetchSQL string
 
 	//go:embed query/create.sql
-	createSQL string
+	CreateSQL string
 
 	//go:embed query/update.sql
-	updateSQL string
+	UpdateSQL string
 
 	//go:embed query/getByEmail.sql
-	getByEmailSQL string
+	GetByEmailSQL string
 
 	//go:embed query/getByID.sql
-	getByIDSQL string
+	GetByIDSQL string
 
 	//go:embed query/delete.sql
-	deleteSQL string
+	DeleteSQL string
 )

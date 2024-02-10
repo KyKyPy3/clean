@@ -1,18 +1,21 @@
-package postgres
+package postgres_test
 
 import (
 	"context"
 	"database/sql"
-	trmsqlx "github.com/avito-tech/go-transaction-manager/drivers/sqlx/v2"
 	"regexp"
 	"testing"
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/KyKyPy3/clean/pkg/logger"
+	trmsqlx "github.com/avito-tech/go-transaction-manager/drivers/sqlx/v2"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/KyKyPy3/clean/internal/modules/user/infrastructure/gateway/postgres"
+	"github.com/KyKyPy3/clean/pkg/logger"
 )
 
 func TestFetch(t *testing.T) {
@@ -33,10 +36,10 @@ func TestFetch(t *testing.T) {
 		}()
 		sqlxDB := sqlx.NewDb(mockDB, "sqlmock")
 
-		repo := NewUserPgStorage(sqlxDB, trmsqlx.DefaultCtxGetter, log)
+		repo := postgres.NewUserPgStorage(sqlxDB, trmsqlx.DefaultCtxGetter, log)
 
 		var limit int64 = 10
-		var offset int64 = 0
+		var offset int64
 
 		userID := uuid.New().String()
 		name := "Ivan"
@@ -66,13 +69,13 @@ func TestFetch(t *testing.T) {
 				updatedAt,
 			)
 
-		mock.ExpectPrepare(regexp.QuoteMeta(fetchSQL))
-		mock.ExpectQuery(regexp.QuoteMeta(fetchSQL)).
+		mock.ExpectPrepare(regexp.QuoteMeta(postgres.FetchSQL))
+		mock.ExpectQuery(regexp.QuoteMeta(postgres.FetchSQL)).
 			WithArgs(limit, offset).
 			WillReturnRows(rows)
 
 		users, err := repo.Fetch(context.TODO(), limit, offset)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		assert.Len(t, users, 1)
 
@@ -86,7 +89,7 @@ func TestFetch(t *testing.T) {
 
 		// ensure that all expectations are met in the mock
 		errExpectations := mock.ExpectationsWereMet()
-		assert.Nil(t, errExpectations)
+		assert.NoError(t, errExpectations)
 	})
 
 	t.Run("Successfully retrieve empty result", func(t *testing.T) {
@@ -99,10 +102,10 @@ func TestFetch(t *testing.T) {
 		}()
 		sqlxDB := sqlx.NewDb(mockDB, "sqlmock")
 
-		repo := NewUserPgStorage(sqlxDB, trmsqlx.DefaultCtxGetter, log)
+		repo := postgres.NewUserPgStorage(sqlxDB, trmsqlx.DefaultCtxGetter, log)
 
 		var limit int64 = 10
-		var offset int64 = 0
+		var offset int64
 
 		rows := mock.
 			NewRows([]string{
@@ -115,19 +118,19 @@ func TestFetch(t *testing.T) {
 				"updated_at",
 			})
 
-		mock.ExpectPrepare(regexp.QuoteMeta(fetchSQL))
-		mock.ExpectQuery(regexp.QuoteMeta(fetchSQL)).
+		mock.ExpectPrepare(regexp.QuoteMeta(postgres.FetchSQL))
+		mock.ExpectQuery(regexp.QuoteMeta(postgres.FetchSQL)).
 			WithArgs(limit, offset).
 			WillReturnRows(rows)
 
 		users, err := repo.Fetch(context.TODO(), limit, offset)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
-		assert.Len(t, users, 0)
+		assert.Empty(t, users)
 
 		// ensure that all expectations are met in the mock
 		errExpectations := mock.ExpectationsWereMet()
-		assert.Nil(t, errExpectations)
+		assert.NoError(t, errExpectations)
 	})
 
 	t.Run("Failed retrieve users", func(t *testing.T) {
@@ -140,23 +143,23 @@ func TestFetch(t *testing.T) {
 		}()
 		sqlxDB := sqlx.NewDb(mockDB, "sqlmock")
 
-		repo := NewUserPgStorage(sqlxDB, trmsqlx.DefaultCtxGetter, log)
+		repo := postgres.NewUserPgStorage(sqlxDB, trmsqlx.DefaultCtxGetter, log)
 
 		var limit int64 = 10
-		var offset int64 = 0
+		var offset int64
 
-		mock.ExpectPrepare(regexp.QuoteMeta(fetchSQL))
-		mock.ExpectQuery(regexp.QuoteMeta(fetchSQL)).
+		mock.ExpectPrepare(regexp.QuoteMeta(postgres.FetchSQL))
+		mock.ExpectQuery(regexp.QuoteMeta(postgres.FetchSQL)).
 			WithArgs(limit, offset).
 			WillReturnError(sql.ErrNoRows)
 
 		users, err := repo.Fetch(context.TODO(), limit, offset)
-		assert.ErrorIs(t, err, sql.ErrNoRows)
-		assert.Len(t, users, 0)
+		require.ErrorIs(t, err, sql.ErrNoRows)
+		assert.Empty(t, users)
 
 		// ensure that all expectations are met in the mock
 		errExpectations := mock.ExpectationsWereMet()
-		assert.Nil(t, errExpectations)
+		assert.NoError(t, errExpectations)
 	})
 
 	t.Run("Failed prepare statement", func(t *testing.T) {
@@ -169,18 +172,18 @@ func TestFetch(t *testing.T) {
 		}()
 		sqlxDB := sqlx.NewDb(mockDB, "sqlmock")
 
-		repo := NewUserPgStorage(sqlxDB, trmsqlx.DefaultCtxGetter, log)
+		repo := postgres.NewUserPgStorage(sqlxDB, trmsqlx.DefaultCtxGetter, log)
 
-		mock.ExpectPrepare(regexp.QuoteMeta(fetchSQL)).
+		mock.ExpectPrepare(regexp.QuoteMeta(postgres.FetchSQL)).
 			WillReturnError(sql.ErrConnDone)
 
 		users, err := repo.Fetch(context.TODO(), int64(10), int64(0))
-		assert.ErrorIs(t, err, sql.ErrConnDone)
-		assert.Len(t, users, 0)
+		require.ErrorIs(t, err, sql.ErrConnDone)
+		assert.Empty(t, users)
 
 		// ensure that all expectations are met in the mock
 		errExpectations := mock.ExpectationsWereMet()
-		assert.Nil(t, errExpectations)
+		assert.NoError(t, errExpectations)
 	})
 
 	t.Run("Failed scan user", func(t *testing.T) {
@@ -193,10 +196,10 @@ func TestFetch(t *testing.T) {
 		}()
 		sqlxDB := sqlx.NewDb(mockDB, "sqlmock")
 
-		repo := NewUserPgStorage(sqlxDB, trmsqlx.DefaultCtxGetter, log)
+		repo := postgres.NewUserPgStorage(sqlxDB, trmsqlx.DefaultCtxGetter, log)
 
 		var limit int64 = 10
-		var offset int64 = 0
+		var offset int64
 
 		rows := mock.
 			NewRows([]string{
@@ -218,16 +221,16 @@ func TestFetch(t *testing.T) {
 				nil,
 			)
 
-		mock.ExpectPrepare(regexp.QuoteMeta(fetchSQL))
-		mock.ExpectQuery(regexp.QuoteMeta(fetchSQL)).
+		mock.ExpectPrepare(regexp.QuoteMeta(postgres.FetchSQL))
+		mock.ExpectQuery(regexp.QuoteMeta(postgres.FetchSQL)).
 			WithArgs(limit, offset).
 			WillReturnRows(rows)
 
 		_, err = repo.Fetch(context.TODO(), limit, offset)
-		assert.Error(t, err)
+		require.Error(t, err)
 
 		// ensure that all expectations are met in the mock
 		errExpectations := mock.ExpectationsWereMet()
-		assert.Nil(t, errExpectations)
+		assert.NoError(t, errExpectations)
 	})
 }

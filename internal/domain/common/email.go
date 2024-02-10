@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-var emailRe = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
+var emailRe = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$") //nolint:lll
 
 var (
 	ErrEmptyEmail = errors.New("email cannot be empty")
@@ -54,7 +54,7 @@ func (e Email) IsEmpty() bool {
 	return e == Email{}
 }
 
-func (e Email) MarshalText() (text []byte, err error) {
+func (e Email) MarshalText() ([]byte, error) {
 	return []byte(e.email), nil
 }
 
