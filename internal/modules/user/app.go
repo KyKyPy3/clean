@@ -14,6 +14,7 @@ import (
 	"github.com/KyKyPy3/clean/internal/modules/user/application/ports"
 	"github.com/KyKyPy3/clean/internal/modules/user/application/query"
 	handlers "github.com/KyKyPy3/clean/internal/modules/user/infrastructure/controller/http/v1"
+	"github.com/KyKyPy3/clean/pkg/jwt"
 	"github.com/KyKyPy3/clean/pkg/logger"
 	"github.com/KyKyPy3/clean/pkg/mediator"
 )
@@ -24,6 +25,7 @@ func InitHandlers(
 	mountPoint *echo.Group,
 	pubsub *mediator.Mediator,
 	trManager *manager.Manager,
+	jwt *jwt.JWT,
 	logger logger.Logger,
 ) {
 	regUniqPolicy := application.NewUniquenessPolicy(ctx, userPgStorage, logger)
@@ -47,5 +49,5 @@ func InitHandlers(
 		event.NewRegistrationVerified(logger, userPgStorage, regUniqPolicy).Handle,
 	)
 
-	handlers.NewUserHandlers(mountPoint, userCmdBus, userQueryBus, logger)
+	handlers.NewUserHandlers(mountPoint, userCmdBus, userQueryBus, jwt, logger)
 }

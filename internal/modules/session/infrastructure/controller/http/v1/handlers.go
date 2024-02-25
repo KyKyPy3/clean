@@ -22,6 +22,8 @@ import (
 const (
 	requestTimeout   = 10 * time.Second
 	cookieExpiration = -time.Hour * 24
+	accessTokenKey   = "access_token"
+	refreshTokenKey  = "refresh_token"
 )
 
 type CommandBus interface {
@@ -53,13 +55,14 @@ func NewAuthHandlers(
 
 	publicMountPoint.POST("/auth/login", handlers.Login)
 	privateMountPoint.POST("/auth/logout", handlers.Logout)
+	privateMountPoint.POST("/auth/refresh", handlers.RefreshToken)
 }
 
 func (a *AuthHandlers) Logout(c echo.Context) error {
 	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
 	defer cancel()
 
-	cookie, err := c.Cookie("refresh_token")
+	cookie, err := c.Cookie(refreshTokenKey)
 	if err != nil {
 		return c.JSON(
 			http.StatusForbidden,
@@ -113,13 +116,13 @@ func (a *AuthHandlers) Logout(c echo.Context) error {
 	expired := time.Now().Add(cookieExpiration)
 
 	cookie = new(http.Cookie)
-	cookie.Name = "access_token"
+	cookie.Name = accessTokenKey
 	cookie.Value = ""
 	cookie.Expires = expired
 	c.SetCookie(cookie)
 
 	cookie = new(http.Cookie)
-	cookie.Name = "refresh_token"
+	cookie.Name = refreshTokenKey
 	cookie.Value = ""
 	cookie.Expires = expired
 	c.SetCookie(cookie)
@@ -133,67 +136,99 @@ func (a *AuthHandlers) Logout(c echo.Context) error {
 	)
 }
 
-func (a *AuthHandlers) RefreshToken(_ echo.Context) error {
-	// cookie, err := c.Cookie("refresh_token")
-	// if err != nil {
-	//	return c.JSON(
-	//		http.StatusForbidden,
-	//		common_http.ResponseDTO{
-	//			Status:  http.StatusForbidden,
-	//			Message: "error",
-	//		},
-	//	)
-	// }
-	//
-	// token, err := a.Jwt.ValidateToken(cookie.Value)
-	// if err != nil {
-	//	return c.JSON(
-	//		http.StatusForbidden,
-	//		common_http.ResponseDTO{
-	//			Status:  http.StatusForbidden,
-	//			Message: "error",
-	//		},
-	//	)
-	// }
-	//
-	// // Get token from database
-	//
-	// // Find user from database
-	//
-	// // Generate tokens
-	// accessToken, err := a.Jwt.CreateToken(user.(*entity.User).ID().String(), a.Cfg.Jwt.AccessTokenMaxAge)
-	// if err != nil {
-	//	return c.JSON(
-	//		http.StatusInternalServerError,
-	//		common_http.ResponseDTO{
-	//			Status:  http.StatusInternalServerError,
-	//			Message: "error",
-	//			Error:   err.Error(),
-	//		},
-	//	)
-	// }
-	//
-	// // Set tokens to cookie
-	//
-	// cookie = new(http.Cookie)
-	// cookie.Name = "access_token"
-	// cookie.Value = *accessToken.Token
-	// cookie.Path = "/"
-	// cookie.MaxAge = int(a.Cfg.Jwt.AccessTokenMaxAge.Seconds())
-	// c.SetCookie(cookie)
-	//
-	// return c.JSON(
-	//	http.StatusOK,
-	//	common_http.ResponseDTO{
-	//		Status:  http.StatusOK,
-	//		Message: "success",
-	//		Data: map[string]interface{}{
-	//			"access_token": accessToken.Token,
-	//		},
-	//	},
-	// )
+func (a *AuthHandlers) RefreshToken(c echo.Context) error {
+	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
+	defer cancel()
 
-	return nil
+	cookie, err := c.Cookie(refreshTokenKey)
+	if err != nil {
+		return c.JSON(
+			http.StatusForbidden,
+			common_http.ResponseDTO{
+				Status:  http.StatusForbidden,
+				Message: "error",
+			},
+		)
+	}
+
+	token, err := a.Jwt.ValidateToken(cookie.Value)
+	if err != nil {
+		return c.JSON(
+			http.StatusForbidden,
+			common_http.ResponseDTO{
+				Status:  http.StatusForbidden,
+				Message: "error",
+			},
+		)
+	}
+
+	// Refresh access token
+	cmd := command.RefreshSessionCommand{
+		ID:         token.TokenUUID,
+		UserID:     token.UserID,
+		AccessTTL:  a.Cfg.Jwt.AccessTokenMaxAge,
+		RefreshTTL: a.Cfg.Jwt.RefreshTokenMaxAge,
+	}
+	res, err := a.Commands.Dispatch(ctx, cmd)
+	if err != nil {
+		a.Logger.Errorf("Failed to refresh token %v", err)
+
+		return c.JSON(
+			http.StatusInternalServerError,
+			common_http.ResponseDTO{
+				Status:  http.StatusForbidden,
+				Message: "error",
+			},
+		)
+	}
+
+	// Unpack results
+	meta, ok := res.(command.RefreshSessionResult)
+	if !ok {
+		return c.JSON(
+			http.StatusInternalServerError,
+			common_http.ResponseDTO{
+				Status:  http.StatusInternalServerError,
+				Message: "error",
+			},
+		)
+	}
+
+	// Generate tokens
+	accessToken, err := a.Jwt.CreateToken(
+		meta.AccessToken.ID().String(),
+		meta.UserID.String(),
+		a.Cfg.Jwt.AccessTokenMaxAge,
+	)
+	if err != nil {
+		return c.JSON(
+			http.StatusInternalServerError,
+			common_http.ResponseDTO{
+				Status:  http.StatusInternalServerError,
+				Message: "error",
+				Error:   err.Error(),
+			},
+		)
+	}
+
+	// Set tokens to cookie
+	cookie = new(http.Cookie)
+	cookie.Name = refreshTokenKey
+	cookie.Value = *accessToken.Token
+	cookie.Path = "/"
+	cookie.MaxAge = int(a.Cfg.Jwt.AccessTokenMaxAge.Seconds())
+	c.SetCookie(cookie)
+
+	return c.JSON(
+		http.StatusOK,
+		common_http.ResponseDTO{
+			Status:  http.StatusOK,
+			Message: "success",
+			Data: map[string]interface{}{
+				"access_token": accessToken.Token,
+			},
+		},
+	)
 }
 
 // Login godoc
@@ -309,7 +344,8 @@ func (a *AuthHandlers) Login(c echo.Context) error {
 			Status:  http.StatusOK,
 			Message: "success",
 			Data: map[string]interface{}{
-				"access_token": accessToken.Token,
+				"access_token":  accessToken.Token,
+				"refresh_token": refreshToken.Token,
 			},
 		},
 	)
@@ -317,7 +353,7 @@ func (a *AuthHandlers) Login(c echo.Context) error {
 
 func (a *AuthHandlers) setCookie(c echo.Context, accessToken, refreshToken *jwt.Token) {
 	cookie := new(http.Cookie)
-	cookie.Name = "access_token"
+	cookie.Name = accessTokenKey
 	cookie.Value = *accessToken.Token
 	cookie.Path = "/"
 	cookie.HttpOnly = true
@@ -325,7 +361,7 @@ func (a *AuthHandlers) setCookie(c echo.Context, accessToken, refreshToken *jwt.
 	c.SetCookie(cookie)
 
 	cookie = new(http.Cookie)
-	cookie.Name = "refresh_token"
+	cookie.Name = refreshTokenKey
 	cookie.Value = *refreshToken.Token
 	cookie.Path = "/"
 	cookie.HttpOnly = true

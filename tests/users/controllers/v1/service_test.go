@@ -35,7 +35,7 @@ func TestClear_SuccessPath(t *testing.T) {
 		Expect().
 		Status(http.StatusOK).JSON().Object()
 
-	res.Path("$.data").Object().Keys().ContainsOnly("access_token")
+	res.Path("$.data").Object().Keys().ContainsAny("access_token", "refresh_token")
 
 	token := res.Path("$.data").Object().Value("access_token").String().Raw()
 

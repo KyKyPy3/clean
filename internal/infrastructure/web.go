@@ -55,7 +55,10 @@ func (w *Web) Start() error {
 	w.echo.Use(middleware.Logger())
 	w.echo.Use(middleware.Recover())
 	// w.echo.Use(middleware.CSRF())
-	w.echo.Use(middleware.CORS())
+	w.echo.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins:     []string{"http://localhost:5173"},
+		AllowCredentials: true,
+	}))
 	w.echo.Use(otelecho.Middleware("clean"))
 
 	// Run the server

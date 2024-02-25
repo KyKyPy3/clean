@@ -10,6 +10,7 @@ type LoginDTO struct {
 }
 
 type UserDTO struct {
+	ID         string `json:"id"`
 	Name       string `json:"name"`
 	Surname    string `json:"surname"`
 	Middlename string `json:"middlename"`
@@ -33,6 +34,7 @@ type UpdateUserDTO struct {
 // UserToResponse - Convert domain user model to response model.
 func UserToResponse(user entity.User) UserDTO {
 	return UserDTO{
+		ID:         user.ID().String(),
 		Name:       user.FullName().FirstName(),
 		Surname:    user.FullName().LastName(),
 		Middlename: user.FullName().MiddleName(),

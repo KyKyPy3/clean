@@ -225,6 +225,7 @@ func (a *App) connectHandlers(ctx context.Context) {
 		privateMountPoint,
 		pubsub,
 		trManager,
+		a.jwt,
 		a.logger,
 	)
 

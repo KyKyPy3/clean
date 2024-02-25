@@ -19,6 +19,7 @@ import (
 	"github.com/KyKyPy3/clean/internal/modules/user/application/query"
 	"github.com/KyKyPy3/clean/internal/modules/user/domain/entity"
 	"github.com/KyKyPy3/clean/internal/modules/user/infrastructure/controller/http/dto"
+	"github.com/KyKyPy3/clean/pkg/jwt"
 	"github.com/KyKyPy3/clean/pkg/logger"
 )
 
@@ -38,18 +39,21 @@ type QueryBus interface {
 type UserHandlers struct {
 	Commands CommandBus
 	Queries  QueryBus
+	Jwt      *jwt.JWT
 	tracer   trace.Tracer
 	Logger   logger.Logger
 }
 
-func NewUserHandlers(v1 *echo.Group, commands CommandBus, queries QueryBus, logger logger.Logger) {
+func NewUserHandlers(v1 *echo.Group, commands CommandBus, queries QueryBus, jwt *jwt.JWT, logger logger.Logger) {
 	handlers := &UserHandlers{
 		Commands: commands,
 		Queries:  queries,
 		Logger:   logger,
+		Jwt:      jwt,
 		tracer:   otel.Tracer(""),
 	}
 
+	v1.GET("/user/me", handlers.GetMe)
 	v1.GET("/user", handlers.Fetch)
 	v1.POST("/user/:id", handlers.Update)
 	v1.GET("/user/:id", handlers.GetByID)
@@ -270,6 +274,72 @@ func (h *UserHandlers) GetByID(c echo.Context) error {
 
 	q := query.FetchUserByIDQuery{
 		ID: id,
+	}
+	user, err := h.Queries.Ask(ctx, q)
+	if err != nil {
+		h.Logger.Errorf("Failed to get user by id %v", err)
+
+		return c.JSON(
+			http.StatusInternalServerError,
+			http_dto.ResponseDTO{
+				Status:  http.StatusInternalServerError,
+				Message: "error",
+				Error:   err.Error(),
+			},
+		)
+	}
+
+	return c.JSON(
+		http.StatusOK,
+		http_dto.ResponseDTO{
+			Status:  http.StatusOK,
+			Message: "success",
+			Data:    dto.UserToResponse(user.(entity.User)),
+		},
+	)
+}
+
+// GetMe godoc
+// @Summary Get current user
+// @Description Get current user handler
+// @Tags User
+// @Accept json
+// @Produce json
+// @Success 200 {object} entity.User
+// @Router /me [get]
+func (h *UserHandlers) GetMe(c echo.Context) error {
+	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
+	defer cancel()
+
+	ctx, span := h.tracer.Start(ctx, "UserHandlers.GetMe")
+	defer span.End()
+
+	cookie, err := c.Cookie("refresh_token")
+	if err != nil {
+		return c.JSON(
+			http.StatusForbidden,
+			http_dto.ResponseDTO{
+				Status:  http.StatusForbidden,
+				Message: "error",
+			},
+		)
+	}
+
+	token, err := h.Jwt.ValidateToken(cookie.Value)
+	if err != nil {
+		return c.JSON(
+			http.StatusForbidden,
+			http_dto.ResponseDTO{
+				Status:  http.StatusForbidden,
+				Message: "error",
+			},
+		)
+	}
+
+	h.Logger.Debugf("Get user with id '%v'", token.UserID)
+
+	q := query.FetchUserByIDQuery{
+		ID: token.UserID,
 	}
 	user, err := h.Queries.Ask(ctx, q)
 	if err != nil {

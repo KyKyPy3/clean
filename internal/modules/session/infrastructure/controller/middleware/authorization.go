@@ -37,6 +37,7 @@ func (a *AuthMiddleware) Process(next echo.HandlerFunc) echo.HandlerFunc {
 			accessToken = strings.TrimPrefix(authorization, "Bearer ")
 		} else {
 			cookie, err := c.Cookie("access_token")
+
 			if err != nil {
 				return c.NoContent(
 					http.StatusUnauthorized,
