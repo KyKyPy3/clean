@@ -1,0 +1,10 @@
+{
+  "signup": {
+    "create_account": "Регистрация",
+    "signup": "Зарегестрировать"
+  },
+  "signin": {
+    "signin": "Войти"
+  },
+  "version": "Версия"
+}

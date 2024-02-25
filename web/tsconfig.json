@@ -1,0 +1,31 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "useDefineForClassFields": true,
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "allowJs": false,
+    "skipLibCheck": true,
+    "esModuleInterop": false,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "types": ["vitest/globals"],
+    "paths": {
+      "@/*": ["./*"],
+      "@base": ["./src/base"],
+      "@core": ["./src/core"],
+      "@utils": ["./src/utils"],
+      "@components/*": ["./src/components/*"],
+      "@user/*": ["./src/modules/user/*"],
+      "@registration/*": ["./src/modules/registration/*"],
+      "@session/*": ["./src/modules/session/*"],
+      "@game/*": ["./src/modules/game/*"],
+    }
+  },
+  "references": [{ "path": "./tsconfig.node.json" }]
+}

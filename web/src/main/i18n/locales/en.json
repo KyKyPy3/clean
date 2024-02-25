@@ -1,0 +1,10 @@
+{
+  "signup": {
+    "create_account": "Create account",
+    "signup": "Signup"
+  },
+  "signin": {
+    "signin": "Signin"
+  },
+  "version": "Version"
+}

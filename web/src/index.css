@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+* {
+  font-family: 'Barlow Condensed', sans-serif;
+}
+
+body {
+  margin: 0;
+
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@layer components {
+  .default-bg {
+    @apply bg-gradient-to-r from-cyan-300 from-10% via-orange-300 via-50% to-cyan-300 to-90%
+  }
+}
