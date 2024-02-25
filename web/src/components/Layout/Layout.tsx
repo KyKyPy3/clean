@@ -19,7 +19,7 @@ const Layout: React.FC<LayoutProps> = props => {
         <div className='flex flex-col gap-2 h-screen p-2'>
           <MenuButton
             id='menu-button-user'
-            title='User'
+            title='Users'
             icon={<Users />}
             onClick={() => navigate("user")}
           />

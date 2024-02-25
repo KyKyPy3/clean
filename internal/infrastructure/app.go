@@ -12,6 +12,8 @@ import (
 
 	"github.com/KyKyPy3/clean/internal/infrastructure/config"
 	"github.com/KyKyPy3/clean/internal/infrastructure/queue"
+	"github.com/KyKyPy3/clean/internal/modules/game"
+	game_postgres "github.com/KyKyPy3/clean/internal/modules/game/infrastructure/gateway/postgres"
 	"github.com/KyKyPy3/clean/internal/modules/registration"
 	email_gateway "github.com/KyKyPy3/clean/internal/modules/registration/infrastructure/gateway/email"
 	reg_postgres "github.com/KyKyPy3/clean/internal/modules/registration/infrastructure/gateway/postgres"
@@ -216,6 +218,8 @@ func (a *App) connectHandlers(ctx context.Context) {
 	publicMountPoint := mountPoint.Group("/api/v1")
 	privateMountPoint := mountPoint.Group("/api/v1", authMiddleware.Process)
 
+	gamePgStorage := game_postgres.NewGamePgStorage(a.pgClient, trmsqlx.DefaultCtxGetter, a.logger)
+
 	////////////////////////////////
 	// Init user layout
 	////////////////////////////////
@@ -255,6 +259,18 @@ func (a *App) connectHandlers(ctx context.Context) {
 		trManager,
 		emailGateway,
 		outboxMngr,
+		a.logger,
+	)
+
+	////////////////////////////////
+	// Init games layout
+	////////////////////////////////
+	game.InitHandlers(
+		ctx,
+		gamePgStorage,
+		privateMountPoint,
+		pubsub,
+		trManager,
 		a.logger,
 	)
 }
