@@ -1,7 +1,7 @@
 export OSTYPE := $(shell uname -s | tr A-Z a-z)
 export ARCH1 := $(shell uname -m)
 
-ifeq ($(OSTYPE),Linux)
+ifeq ($(OSTYPE),linux)
 	export ARCH2 := "amd64"
 else
 	export ARCH2 := ${ARCH1}
