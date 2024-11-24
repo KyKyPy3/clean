@@ -90,19 +90,19 @@ func (g *gamePgStorage) Create(ctx context.Context, d entity.Game) error {
 	defer span.End()
 
 	// Create game
-	create_stmt, err := g.getter.DefaultTrOrDB(ctx, g.db).PreparexContext(ctx, CreateSQL)
+	createStmt, err := g.getter.DefaultTrOrDB(ctx, g.db).PreparexContext(ctx, CreateSQL)
 	if err != nil {
 		return errors.Wrap(err, "Create.PreparexContext")
 	}
 	defer func() {
-		err = create_stmt.Close()
+		err = createStmt.Close()
 		if err != nil {
 			g.logger.Errorf("can't close create statement, err: %v", err)
 		}
 	}()
 
 	game := GameToDB(d)
-	if err = create_stmt.QueryRowxContext(
+	if err = createStmt.QueryRowxContext(
 		ctx,
 		game.ID,
 		game.Name,
@@ -112,18 +112,18 @@ func (g *gamePgStorage) Create(ctx context.Context, d entity.Game) error {
 	}
 
 	// Add game creater as owner
-	add_user_stmt, err := g.getter.DefaultTrOrDB(ctx, g.db).PreparexContext(ctx, AddUserSQL)
+	addUserStmt, err := g.getter.DefaultTrOrDB(ctx, g.db).PreparexContext(ctx, AddUserSQL)
 	if err != nil {
 		return errors.Wrap(err, "Create.PreparexContext")
 	}
 	defer func() {
-		err = add_user_stmt.Close()
+		err = addUserStmt.Close()
 		if err != nil {
 			g.logger.Errorf("can't close add user statement, err: %v", err)
 		}
 	}()
 
-	if _, err = add_user_stmt.ExecContext(ctx, game.ID, game.OwnerID, 1); err != nil {
+	if _, err = addUserStmt.ExecContext(ctx, game.ID, game.OwnerID, 1); err != nil {
 		g.logger.Errorf("can't add user to game, err: %v", err)
 		return errors.Wrap(err, "Create.ExecContext")
 	}

@@ -138,13 +138,18 @@ func (g *GameHandlers) Fetch(c echo.Context) error {
 		)
 	}
 
+	gamesList, ok := games.([]dto.GameDTO)
+	if !ok {
+		return errors.New("invalid type assertion: expected []dto.GameDTO")
+	}
+
 	return c.JSON(
 		http.StatusOK,
 		http_dto.ResponseDTO{
 			Status:  http.StatusOK,
 			Message: "success",
 			Data: map[string]interface{}{
-				"games": games.([]dto.GameDTO),
+				"games": gamesList,
 			},
 		},
 	)

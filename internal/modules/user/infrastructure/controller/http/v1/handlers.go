@@ -146,8 +146,12 @@ func (h *UserHandlers) Fetch(c echo.Context) error {
 	}
 
 	respUsers := make([]dto.UserDTO, 0)
+	usersList, ok := users.([]entity.User)
+	if !ok {
+		return errors.New("invalid type assertion: expected []entity.User")
+	}
 
-	for _, user := range users.([]entity.User) {
+	for _, user := range usersList {
 		respUsers = append(respUsers, dto.UserToResponse(user))
 	}
 
@@ -289,12 +293,17 @@ func (h *UserHandlers) GetByID(c echo.Context) error {
 		)
 	}
 
+	userResponse, ok := user.(entity.User)
+	if !ok {
+		return errors.New("invalid type assertion: expected entity.User")
+	}
+
 	return c.JSON(
 		http.StatusOK,
 		http_dto.ResponseDTO{
 			Status:  http.StatusOK,
 			Message: "success",
-			Data:    dto.UserToResponse(user.(entity.User)),
+			Data:    dto.UserToResponse(userResponse),
 		},
 	)
 }
@@ -355,12 +364,17 @@ func (h *UserHandlers) GetMe(c echo.Context) error {
 		)
 	}
 
+	userResponse, ok := user.(entity.User)
+	if !ok {
+		return errors.New("invalid type assertion: expected entity.User")
+	}
+
 	return c.JSON(
 		http.StatusOK,
 		http_dto.ResponseDTO{
 			Status:  http.StatusOK,
 			Message: "success",
-			Data:    dto.UserToResponse(user.(entity.User)),
+			Data:    dto.UserToResponse(userResponse),
 		},
 	)
 }

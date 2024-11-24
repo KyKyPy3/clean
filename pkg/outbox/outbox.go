@@ -37,11 +37,11 @@ type Options struct {
 }
 
 type outbox struct {
-	ID       int64
-	Topic    string
-	Kind     string
-	Payload  []byte
-	Consumed bool
+	ID       int64  `db:"id"`
+	Topic    string `db:"topic"`
+	Kind     string `db:"kind"`
+	Payload  []byte `db:"payload"`
+	Consumed bool   `db:"consumed"`
 }
 
 type Manager struct {
@@ -134,19 +134,32 @@ func (m *Manager) Consume(ctx context.Context) error {
 		if panicErr := recover(); panicErr != nil {
 			rollbackErr := tx.Rollback()
 			if rollbackErr != nil {
-				err = fmt.Errorf("panic Error + rollback Error: %w", panicErr.(error))
+				// Combine panic and rollback errors
+				err = fmt.Errorf("panic: %v, rollback failed: %w", panicErr, rollbackErr)
 			} else {
-				err = fmt.Errorf("panic Error: %w", panicErr.(error))
+				// Convert panic to error safely
+				switch v := panicErr.(type) {
+				case error:
+					err = fmt.Errorf("panic: %w", v)
+				default:
+					err = fmt.Errorf("panic: %v", v)
+				}
 			}
+			return
 		}
 
+		// Handle normal error cases
 		if err != nil {
 			rollbackErr := tx.Rollback()
 			if rollbackErr != nil {
-				err = fmt.Errorf("rollback Error: %w", rollbackErr)
+				err = fmt.Errorf("original error: %w; rollback failed: %w", err, rollbackErr)
 			}
-		} else {
-			err = tx.Commit()
+			return
+		}
+
+		// Commit if no errors occurred
+		if commitErr := tx.Commit(); commitErr != nil {
+			err = fmt.Errorf("commit failed: %w", commitErr)
 		}
 	}()
 

@@ -28,7 +28,14 @@ func GameFromDB(dbGame DBGame) (entity.Game, error) {
 		return entity.Game{}, err
 	}
 
-	game := entity.Hydrate(entityID, dbGame.Name, ownerID, make([]entity.GameMember, 0), dbGame.CreatedAt, dbGame.UpdatedAt)
+	game := entity.Hydrate(
+		entityID,
+		dbGame.Name,
+		ownerID,
+		make([]entity.GameMember, 0),
+		dbGame.CreatedAt,
+		dbGame.UpdatedAt,
+	)
 
 	return game, nil
 }

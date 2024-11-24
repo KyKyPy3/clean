@@ -47,16 +47,16 @@ func (f FetchGames) Handle(ctx context.Context, query core.Query) (any, error) {
 		return nil, fmt.Errorf("query type %s: %w", query.Type(), core.ErrUnexpectedQuery)
 	}
 
-	games, err := f.gameStorage.Fetch(ctx, fetchQuery.Limit, fetchQuery.Offset)
-	if err != nil {
-		return nil, err
+	games, fetchErr := f.gameStorage.Fetch(ctx, fetchQuery.Limit, fetchQuery.Offset)
+	if fetchErr != nil {
+		return nil, fmt.Errorf("fetch games error: %w", fetchErr)
 	}
 
 	gamesDto := make([]dto.GameShortDTO, 0, len(games))
 	for _, game := range games {
-		user, err := f.userStorage.GetByID(ctx, game.OwnerID())
-		if err != nil {
-			return nil, err
+		user, userErr := f.userStorage.GetByID(ctx, game.OwnerID())
+		if userErr != nil {
+			return nil, fmt.Errorf("get user error for game %s: %w", game.ID(), userErr)
 		}
 
 		gamesDto = append(gamesDto, dto.GameShortDTO{
