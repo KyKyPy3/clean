@@ -1,5 +1,11 @@
 export OSTYPE := $(shell uname -s | tr A-Z a-z)
-export ARCH := $(shell uname -m)
+export ARCH1 := $(shell uname -m)
+
+ifeq ($(OSTYPE),Linux)
+	export ARCH2 := "amd64"
+else
+	export ARCH2 := ARCH1
+endif
 
 include ./utils/depends.Makefile
 
