@@ -15,7 +15,7 @@ bin/migrate: VERSION := 4.18.1
 bin/migrate: GITHUB  := golang-migrate/migrate
 bin/migrate: ARCHIVE := migrate.$(OSTYPE)-${ARCH}.tar.gz
 bin/migrate: bin
-	@ printf "Install migrate... "
+	@ printf "Install migrate from https://github.com/$(GITHUB)/releases/download/v$(VERSION)/$(ARCHIVE)... "
 	@ curl -Ls $(call github_url) | tar -zOxf - ./migrate > $@ && chmod +x $@
 	@ echo "done."
 
@@ -28,7 +28,7 @@ bin/gotestsum: VERSION := 1.12.0
 bin/gotestsum: GITHUB  := gotestyourself/gotestsum
 bin/gotestsum: ARCHIVE := gotestsum_$(VERSION)_$(OSTYPE)_${ARCH}.tar.gz
 bin/gotestsum: bin
-	@ printf "Install gotestsum... "
+	@ printf "Install gotestsum from https://github.com/$(GITHUB)/releases/download/v$(VERSION)/$(ARCHIVE)... "
 	@ curl -Ls $(call github_url) | tar -zOxvf - gotestsum > $@ && chmod +x $@
 	@ echo "done."
 
@@ -41,8 +41,7 @@ bin/tparse: VERSION := 0.16.0
 bin/tparse: GITHUB  := mfridman/tparse
 bin/tparse: ARCHIVE := tparse_$(OSTYPE)_${ARCH}
 bin/tparse: bin
-	@ printf "Install tparse... "
-	@ printf "Download from https://github.com/$(GITHUB)/releases/download/v$(VERSION)/$(ARCHIVE)... "
+	@ printf "Install tparse from https://github.com/$(GITHUB)/releases/download/v$(VERSION)/$(ARCHIVE)... "
 	@ curl -Ls $(shell echo $(call github_url) | tr A-Z a-z) > $@ && chmod +x $@
 	@ echo "done."
 
@@ -55,7 +54,7 @@ bin/mockery: VERSION := 2.49.0
 bin/mockery: GITHUB  := vektra/mockery
 bin/mockery: ARCHIVE := mockery_$(VERSION)_$(OSTYPE)_${ARCH}.tar.gz
 bin/mockery: bin
-	@ printf "Install mockery... "
+	@ printf "Install mockery from https://github.com/$(GITHUB)/releases/download/v$(VERSION)/$(ARCHIVE)... "
 	@ curl -Ls $(call github_url) | tar -zOxf - mockery > $@ && chmod +x $@
 	@ echo "done."
 
@@ -67,7 +66,7 @@ bin/golangci-lint: VERSION := 1.62.0
 bin/golangci-lint: GITHUB  := golangci/golangci-lint
 bin/golangci-lint: ARCHIVE := golangci-lint-$(VERSION)-$(OSTYPE)-${ARCH}.tar.gz
 bin/golangci-lint: bin
-	@ printf "Install golangci-linter... "
+	@ printf "Install golangci-linter from https://github.com/$(GITHUB)/releases/download/v$(VERSION)/$(ARCHIVE)... "
 	@ curl -Ls $(call github_url) | tar -zOxvf - $(shell printf golangci-lint-$(VERSION)-$(OSTYPE)-${ARCH}/golangci-lint) > $@ && chmod +x $@
 	@ echo "done."
 
@@ -79,7 +78,7 @@ bin/go-arch-lint: VERSION := 1.11.6
 bin/go-arch-lint: GITHUB  := fe3dback/go-arch-lint
 bin/go-arch-lint: ARCHIVE := go-arch-lint_$(VERSION)_$(OSTYPE)_${ARCH}.tar.gz
 bin/go-arch-lint: bin
-	@ printf "Install go-arch-lint... "
+	@ printf "Install go-arch-lint from https://github.com/$(GITHUB)/releases/download/v$(VERSION)/$(ARCHIVE)... "
 	@ curl -Ls $(call github_url) | tar -zOxf - ./go-arch-lint > $@ && chmod +x $@
 	@ echo "done."
 
@@ -91,6 +90,6 @@ bin/swag: VERSION := 1.16.4
 bin/swag: GITHUB  := swaggo/swag
 bin/swag: ARCHIVE := swag_$(VERSION)_$(OSTYPE)_${ARCH}.tar.gz
 bin/swag: bin
-	@ printf "Install swag... "
+	@ printf "Install swag from https://github.com/$(GITHUB)/releases/download/v$(VERSION)/$(ARCHIVE)... "
 	@ curl -Ls $(call github_url) | tar -zOxf - swag > $@ && chmod +x $@
 	@ echo "done."

@@ -36,9 +36,6 @@ jobs:
       - name: Install Dependencies
         run: make install-deps
 
-      - name: Make binary executable
-        run: chmod +x ./bin/*
-
       - name: Build
         run: make build
 
