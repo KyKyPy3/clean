@@ -1,4 +1,5 @@
 export OSTYPE := $(shell uname -s | tr A-Z a-z)
+export ARCH := $(shell uname -m)
 
 include ./utils/depends.Makefile
 
@@ -83,16 +84,16 @@ image-build:
 # ==============================================================================
 # Docker compose commands
 dev:
-	docker-compose -f deploy/docker-compose.dev.yml up -d --build
+	docker compose -f deploy/docker-compose.dev.yml up -d --build
 
 dev-env:
-	@ docker-compose -f deploy/docker-compose.dev.yml up -d --build postgresql redis otelcol jaeger prometheus node_exporter
+	@ docker compose -f deploy/docker-compose.dev.yml up -d --build postgresql redis otelcol jaeger prometheus node_exporter
 
 docker-stop:
-	@ docker-compose -f deploy/docker-compose.dev.yml down
+	@ docker compose -f deploy/docker-compose.dev.yml down
 
 docker-teardown:
-	@ docker-compose -f deploy/docker-compose.dev.yml down --remove-orphans -v
+	@ docker compose -f deploy/docker-compose.dev.yml down --remove-orphans -v
 
 docker-clean:
 	@ docker image prune -f

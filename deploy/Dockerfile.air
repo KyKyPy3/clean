@@ -1,11 +1,14 @@
 FROM golang:latest
 
-RUN go install -mod=mod github.com/cosmtrek/air
-
 WORKDIR /app
+
+RUN go install github.com/air-verse/air@latest
+
+COPY go.mod go.sum ./
+RUN go mod download
 
 ENV config=config/config-docker.yml
 
 EXPOSE 8080
 
-ENTRYPOINT ["air"]
+ENTRYPOINT ["air", "-c", ".air.toml"]

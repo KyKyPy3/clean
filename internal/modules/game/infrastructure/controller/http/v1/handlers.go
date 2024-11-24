@@ -17,7 +17,6 @@ import (
 	http_dto "github.com/KyKyPy3/clean/internal/infrastructure/controller/http"
 	"github.com/KyKyPy3/clean/internal/modules/game/application/command"
 	"github.com/KyKyPy3/clean/internal/modules/game/application/query"
-	"github.com/KyKyPy3/clean/internal/modules/game/domain/entity"
 	"github.com/KyKyPy3/clean/internal/modules/game/infrastructure/controller/http/dto"
 	"github.com/KyKyPy3/clean/pkg/logger"
 )
@@ -139,19 +138,13 @@ func (g *GameHandlers) Fetch(c echo.Context) error {
 		)
 	}
 
-	respGames := make([]dto.GameDTO, 0)
-
-	for _, game := range games.([]entity.Game) {
-		respGames = append(respGames, dto.GameToResponse(game))
-	}
-
 	return c.JSON(
 		http.StatusOK,
 		http_dto.ResponseDTO{
 			Status:  http.StatusOK,
 			Message: "success",
 			Data: map[string]interface{}{
-				"games": respGames,
+				"games": games.([]dto.GameDTO),
 			},
 		},
 	)
@@ -220,7 +213,18 @@ func (g *GameHandlers) Create(c echo.Context) error {
 
 	g.Logger.Debugf("Create game with params %v", params)
 
-	cmd := command.NewCreateGameCommand(params.Name)
+	userID, ok := c.Get("user_id").(string)
+	if !ok {
+		return c.JSON(
+			http.StatusForbidden,
+			http_dto.ResponseDTO{
+				Status:  http.StatusForbidden,
+				Message: "error",
+			},
+		)
+	}
+
+	cmd := command.NewCreateGameCommand(params.Name, userID)
 	_, err = g.Commands.Dispatch(ctx, cmd)
 	if err != nil {
 		g.Logger.Errorf("Failed to create registration %w", err)

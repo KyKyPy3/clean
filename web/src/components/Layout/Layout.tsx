@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom"
-import { User, LogOut, Users } from 'lucide-react'
+import { User, LogOut, Users, Gamepad } from 'lucide-react'
 
 import MenuButton from "../MenuButton/MenuButton"
 import { useSessionStore } from "@session/infrastructure/controller/http/v1/store"
@@ -17,6 +17,12 @@ const Layout: React.FC<LayoutProps> = props => {
       <div className='md:w-1/12 w-3/12'>
         Logo put here
         <div className='flex flex-col gap-2 h-screen p-2'>
+          <MenuButton
+            id='menu-button-user'
+            title='Games'
+            icon={<Gamepad />}
+            onClick={() => navigate("game")}
+          />
           <MenuButton
             id='menu-button-user'
             title='Users'

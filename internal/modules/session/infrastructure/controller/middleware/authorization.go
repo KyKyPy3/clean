@@ -75,7 +75,7 @@ func (a *AuthMiddleware) Process(next echo.HandlerFunc) echo.HandlerFunc {
 			)
 		}
 
-		c.Set("userID", t.UserID().String())
+		c.Set("user_id", t.UserID().String())
 		c.Set("access_token_id", t.ID().String())
 
 		return next(c)

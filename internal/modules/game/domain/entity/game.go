@@ -2,6 +2,7 @@ package entity
 
 import (
 	"fmt"
+	"reflect"
 	"time"
 
 	"github.com/KyKyPy3/clean/internal/domain/common"
@@ -14,20 +15,24 @@ import (
 type Game struct {
 	*core.BaseAggregateRoot
 
-	id        common.UID
-	name      string
-	createdAt time.Time
-	updatedAt time.Time
+	id          common.UID
+	name        string
+	ownerID     common.UID
+	gameMembers []GameMember
+	createdAt   time.Time
+	updatedAt   time.Time
 }
 
 // NewGame - creates a new Game instance with the provided name.
 func NewGame(
 	name string,
+	ownerID common.UID,
 ) (Game, error) {
 	game := Game{
 		BaseAggregateRoot: &core.BaseAggregateRoot{},
 		id:                common.NewUID(),
 		name:              name,
+		ownerID:           ownerID,
 	}
 
 	game.BaseAggregateRoot.AddEvent(event.GameCreatedEvent{ID: game.ID().String(), Name: name})
@@ -38,6 +43,8 @@ func NewGame(
 func Hydrate(
 	id common.UID,
 	name string,
+	ownerID common.UID,
+	gameMembers []GameMember,
 	createdAt time.Time,
 	updatedAt time.Time,
 ) Game {
@@ -45,6 +52,8 @@ func Hydrate(
 		BaseAggregateRoot: &core.BaseAggregateRoot{},
 		id:                id,
 		name:              name,
+		ownerID:           ownerID,
+		gameMembers:       gameMembers,
 		createdAt:         createdAt,
 		updatedAt:         updatedAt,
 	}
@@ -52,36 +61,56 @@ func Hydrate(
 	return game
 }
 
-func (u *Game) ID() common.UID {
-	return u.id
+func (g *Game) ID() common.UID {
+	return g.id
 }
 
-func (u *Game) IsEmpty() bool {
-	return *u == Game{}
+func (g *Game) IsEmpty() bool {
+	return reflect.DeepEqual(*g, Game{})
 }
 
 // Name returns the name of the game.
-func (u *Game) Name() string {
-	return u.name
+func (g *Game) Name() string {
+	return g.name
 }
 
-func (u *Game) CreatedAt() time.Time {
-	return u.createdAt
+func (g *Game) OwnerID() common.UID {
+	return g.ownerID
 }
 
-func (u *Game) UpdatedAt() time.Time {
-	return u.updatedAt
+func (g *Game) GameMembers() []GameMember {
+	return g.gameMembers
+}
+
+func (g *Game) AddMember(memberID common.UID, name string) error {
+	newMember, err := NewGroupMember(name, memberID, g.id)
+	if err != nil {
+		return err
+	}
+
+	g.gameMembers = append(g.gameMembers, newMember)
+
+	return nil
+}
+
+func (g *Game) CreatedAt() time.Time {
+	return g.createdAt
+}
+
+func (g *Game) UpdatedAt() time.Time {
+	return g.updatedAt
 }
 
 // String returns the string representation of the game.
-func (u *Game) String() string {
+// TODO: add additional fields
+func (g *Game) String() string {
 	return fmt.Sprintf(
 		"Game{ID: %s, Name: %s}",
-		u.ID(),
-		u.Name(),
+		g.ID(),
+		g.Name(),
 	)
 }
 
-func (u *Game) Events() []mediator.Event {
-	return u.BaseAggregateRoot.Events()
+func (g *Game) Events() []mediator.Event {
+	return g.BaseAggregateRoot.Events()
 }

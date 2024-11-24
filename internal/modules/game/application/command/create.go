@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/KyKyPy3/clean/internal/application/core"
+	"github.com/KyKyPy3/clean/internal/domain/common"
 	"github.com/KyKyPy3/clean/internal/modules/game/application/ports"
 	"github.com/KyKyPy3/clean/internal/modules/game/domain/entity"
 	"github.com/KyKyPy3/clean/pkg/logger"
@@ -13,12 +14,14 @@ import (
 const CreateGameKind = "CreateGame"
 
 type CreateGameCommand struct {
-	Name string
+	Name   string
+	UserID string
 }
 
-func NewCreateGameCommand(name string) CreateGameCommand {
+func NewCreateGameCommand(name, userID string) CreateGameCommand {
 	return CreateGameCommand{
-		Name: name,
+		Name:   name,
+		UserID: userID,
 	}
 }
 
@@ -55,7 +58,12 @@ func (c CreateGame) Handle(ctx context.Context, command core.Command) (any, erro
 		return nil, fmt.Errorf("command type %s: %w", command.Type(), core.ErrUnexpectedCommand)
 	}
 
-	game, err := entity.NewGame(createCommand.Name)
+	userID, err := common.ParseUID(createCommand.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	game, err := entity.NewGame(createCommand.Name, userID)
 	if err != nil {
 		return nil, err
 	}

@@ -171,7 +171,7 @@ func (u *userPgStorage) getByParam(ctx context.Context, sqlQuery string, param a
 	defer func() {
 		err = stmt.Close()
 		if err != nil {
-			u.logger.Errorf("can't close getByEmail statement, err: %v", err)
+			u.logger.Errorf("can't close getByParam statement, err: %v", err)
 		}
 	}()
 

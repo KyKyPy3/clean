@@ -29,6 +29,11 @@ export const AppRoutes = () => {
           errorElement: <Error />,
         },
         {
+          path: "/game",
+          element: <GamesList />,
+          errorElement: <Error />,
+        },
+        {
           path: "/profile",
           element: <Profile />,
           errorElement: <Error />,

@@ -1,4 +1,6 @@
 with-expecter: True
+issue-845-fix: True
+resolve-type-alias: False
 dir: mocks/{{ replaceAll .InterfaceDirRelative "internal" "internal_" }}
 mockname: "{{.InterfaceName}}"
 outpkg: "mocks"
@@ -13,4 +15,4 @@ packages:
       recursive: True
   github.com/KyKyPy3/clean/internal/modules/user/infrastructure/controller/http/v1:
     config:
-        recursive: True
+      recursive: True

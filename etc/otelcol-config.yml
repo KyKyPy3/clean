@@ -4,7 +4,8 @@ receivers:
       grpc:
 
 exporters:
-  logging:
+  debug:
+    verbosity: detailed
 
   otlp:
     endpoint: jaeger:4317
@@ -33,8 +34,8 @@ service:
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [logging, otlp]
+      exporters: [debug, otlp]
     metrics:
       receivers: [otlp]
       processors: [batch]
-      exporters: [logging, prometheus]
+      exporters: [debug, prometheus]

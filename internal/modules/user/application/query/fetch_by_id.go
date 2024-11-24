@@ -48,10 +48,10 @@ func (f FetchUserByID) Handle(ctx context.Context, query core.Query) (any, error
 		return nil, err
 	}
 
-	users, err := f.storage.GetByID(ctx, id)
+	user, err := f.storage.GetByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
-	return users, nil
+	return user, nil
 }

@@ -11,6 +11,7 @@ import (
 type DBGame struct {
 	ID        string    `db:"id"`
 	Name      string    `db:"name"`
+	OwnerID   string    `db:"owner_id"`
 	CreatedAt time.Time `db:"created_at"`
 	UpdatedAt time.Time `db:"updated_at"`
 }
@@ -22,7 +23,12 @@ func GameFromDB(dbGame DBGame) (entity.Game, error) {
 		return entity.Game{}, err
 	}
 
-	game := entity.Hydrate(entityID, dbGame.Name, dbGame.CreatedAt, dbGame.UpdatedAt)
+	ownerID, err := common.ParseUID(dbGame.OwnerID)
+	if err != nil {
+		return entity.Game{}, err
+	}
+
+	game := entity.Hydrate(entityID, dbGame.Name, ownerID, make([]entity.GameMember, 0), dbGame.CreatedAt, dbGame.UpdatedAt)
 
 	return game, nil
 }
@@ -30,7 +36,8 @@ func GameFromDB(dbGame DBGame) (entity.Game, error) {
 // GameToDB Convert domain game model to database model.
 func GameToDB(game entity.Game) DBGame {
 	return DBGame{
-		ID:   game.ID().String(),
-		Name: game.Name(),
+		ID:      game.ID().String(),
+		Name:    game.Name(),
+		OwnerID: game.OwnerID().String(),
 	}
 }

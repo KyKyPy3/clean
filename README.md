@@ -1,6 +1,9 @@
 # clean
 Example of clean architecture
 
+FIX:
+- [ ] Add slug generator
+
 TODO:
 - [ ] Refactoring error handling
 - [ ] Migrate from viper to cleanenv

@@ -1,8 +1,8 @@
 # Builder
-FROM golang:1.21.5-alpine3.19 as builder
+FROM golang:1.23.3-alpine3.20 as builder
 
 RUN apk update && apk upgrade && \
-    apk --update add git make bash build-base
+  apk --update add git make bash build-base
 
 WORKDIR /app
 
@@ -18,9 +18,9 @@ RUN make build
 FROM alpine:latest
 
 RUN apk update && apk upgrade && \
-    apk --update --no-cache add tzdata && \
-    mkdir /app && \
-    mkdir /app/config
+  apk --update --no-cache add tzdata && \
+  mkdir /app && \
+  mkdir /app/config
 
 WORKDIR /app
 

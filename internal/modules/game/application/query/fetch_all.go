@@ -6,6 +6,7 @@ import (
 
 	"github.com/KyKyPy3/clean/internal/application/core"
 	"github.com/KyKyPy3/clean/internal/modules/game/application/ports"
+	"github.com/KyKyPy3/clean/internal/modules/game/infrastructure/controller/http/dto"
 	"github.com/KyKyPy3/clean/pkg/logger"
 )
 
@@ -23,17 +24,20 @@ func (f FetchGamesQuery) Type() core.QueryType {
 var _ core.Query = (*FetchGamesQuery)(nil)
 
 type FetchGames struct {
-	storage ports.GamePgStorage
-	logger  logger.Logger
+	gameStorage ports.GamePgStorage
+	userStorage ports.UserViewStorage
+	logger      logger.Logger
 }
 
 func NewFetchGames(
-	storage ports.GamePgStorage,
+	gameStorage ports.GamePgStorage,
+	userStorage ports.UserViewStorage,
 	logger logger.Logger,
 ) FetchGames {
 	return FetchGames{
-		storage: storage,
-		logger:  logger,
+		gameStorage: gameStorage,
+		userStorage: userStorage,
+		logger:      logger,
 	}
 }
 
@@ -43,10 +47,26 @@ func (f FetchGames) Handle(ctx context.Context, query core.Query) (any, error) {
 		return nil, fmt.Errorf("query type %s: %w", query.Type(), core.ErrUnexpectedQuery)
 	}
 
-	games, err := f.storage.Fetch(ctx, fetchQuery.Limit, fetchQuery.Offset)
+	games, err := f.gameStorage.Fetch(ctx, fetchQuery.Limit, fetchQuery.Offset)
 	if err != nil {
 		return nil, err
 	}
 
-	return games, nil
+	gamesDto := make([]dto.GameShortDTO, 0, len(games))
+	for _, game := range games {
+		user, err := f.userStorage.GetByID(ctx, game.OwnerID())
+		if err != nil {
+			return nil, err
+		}
+
+		gamesDto = append(gamesDto, dto.GameShortDTO{
+			ID:        game.ID().String(),
+			Name:      game.Name(),
+			User:      user.FullName().String(),
+			CreatedAt: game.CreatedAt().String(),
+			UpdatedAt: game.UpdatedAt().String(),
+		})
+	}
+
+	return gamesDto, nil
 }

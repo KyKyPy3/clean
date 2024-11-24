@@ -17,7 +17,8 @@ import (
 
 func InitHandlers(
 	_ context.Context,
-	gamePgStorage ports.GamePgStorage,
+	gameStorage ports.GamePgStorage,
+	userStorage ports.UserViewStorage,
 	mountPoint *echo.Group,
 	pubsub *mediator.Mediator,
 	trManager *manager.Manager,
@@ -26,13 +27,13 @@ func InitHandlers(
 	gameCmdBus := core.NewCommandBus()
 	gameCmdBus.Register(
 		command.CreateGameKind,
-		command.NewCreateGame(gamePgStorage, trManager, pubsub, logger),
+		command.NewCreateGame(gameStorage, trManager, pubsub, logger),
 	)
 
 	gameQueryBus := core.NewQueryBus()
 	gameQueryBus.Register(
 		query.FetchGamesKind,
-		query.NewFetchGames(gamePgStorage, logger),
+		query.NewFetchGames(gameStorage, userStorage, logger),
 	)
 
 	handlers.NewGameHandlers(mountPoint, gameCmdBus, gameQueryBus, logger)

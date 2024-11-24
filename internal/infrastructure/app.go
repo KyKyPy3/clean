@@ -268,6 +268,7 @@ func (a *App) connectHandlers(ctx context.Context) {
 	game.InitHandlers(
 		ctx,
 		gamePgStorage,
+		userPgStorage,
 		privateMountPoint,
 		pubsub,
 		trManager,
